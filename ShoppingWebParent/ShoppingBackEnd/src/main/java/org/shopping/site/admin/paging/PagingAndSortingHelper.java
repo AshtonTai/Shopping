@@ -42,7 +42,7 @@ public class PagingAndSortingHelper {
         model.addAttribute(listName, listItems);
     }
 
-    public void listEntities(int pageNum, int pageSize, UserRepository repo) {
+    public void listEntities(int pageNum, int pageSize, SearchRepository<?, Integer> repo) {
         Pageable pageable = createPageable(pageSize, pageNum);
         Page<?> page = null;
 
