@@ -3,11 +3,12 @@ package org.shopping.site.admin.category;
 import jakarta.transaction.Transactional;
 import org.shopping.entity.Category;
 import org.shopping.exeption.CategoryNotFoundException;
+import org.shopping.site.admin.category.sort.CategorySortingStrategy;
+import org.shopping.site.admin.category.sort.CategorySortingStrategyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -20,20 +21,26 @@ public class CategoryService {
     @Autowired
     private CategoryRepository repo;
 
-    public List<Category> listByPage(CategoryPageInfo pageInfo, int pageNum, String sortDir,
-                                     String keyword) {
-        Sort sort = Sort.by("name");
+    @Autowired
+    private CategorySortingStrategyFactory sortingStrategyFactory; // ← NEW
 
-        if (sortDir.equals("asc")) {
-            sort = sort.ascending();
-        } else if (sortDir.equals("desc")) {
-            sort = sort.descending();
-        }
+    public List<Category> listByPage(CategoryPageInfo pageInfo, int pageNum, String sortDir, String keyword) {
+        // ← Use strategy instead of inline if/else
+        CategorySortingStrategy strategy = sortingStrategyFactory.getStrategy(sortDir);
+        Pageable pageable = PageRequest.of(pageNum - 1, ROOT_CATEGORIES_PER_PAGE, strategy.getSortForRootCategories());
 
-        Pageable pageable = PageRequest.of(pageNum - 1, ROOT_CATEGORIES_PER_PAGE, sort);
+//    public List<Category> listByPage(CategoryPageInfo pageInfo, int pageNum, String sortDir,
+//                                     String keyword) {
+//        Sort sort = Sort.by("name");
+//
+//        if (sortDir.equals("asc")) {
+//            sort = sort.ascending();
+//        } else if (sortDir.equals("desc")) {
+//            sort = sort.descending();
+//        }
+//        Pageable pageable = PageRequest.of(pageNum - 1, ROOT_CATEGORIES_PER_PAGE, sort);
 
-        Page<Category> pageCategories = null;
-
+        Page<Category> pageCategories;
         if (keyword != null && !keyword.isEmpty()) {
             pageCategories = repo.search(keyword, pageable);
         } else {
@@ -41,7 +48,6 @@ public class CategoryService {
         }
 
         List<Category> rootCategories = pageCategories.getContent();
-
         pageInfo.setTotalElements(pageCategories.getTotalElements());
         pageInfo.setTotalPages(pageCategories.getTotalPages());
 
@@ -50,51 +56,80 @@ public class CategoryService {
             for (Category category : searchResult) {
                 category.setHasChildren(category.getChildren().size() > 0);
             }
-
             return searchResult;
-
         } else {
-            return listHierarchicalCategories(rootCategories, sortDir);
+            return listHierarchicalCategories(rootCategories, strategy.getComparatorForChildren());
+//            return listHierarchicalCategories(rootCategories, sortDir);
         }
     }
 
-    private List<Category> listHierarchicalCategories(List<Category> rootCategories, String sortDir) {
+    private List<Category> listHierarchicalCategories(List<Category> rootCategories, Comparator<Category> childComparator) {
         List<Category> hierarchicalCategories = new ArrayList<>();
 
         for (Category rootCategory : rootCategories) {
             hierarchicalCategories.add(Category.copyFull(rootCategory));
 
-            Set<Category> children = sortSubCategories(rootCategory.getChildren(), sortDir);
+            Set<Category> children = sortSubCategories(rootCategory.getChildren(), childComparator);
 
             for (Category subCategory : children) {
                 String name = "--" + subCategory.getName();
                 hierarchicalCategories.add(Category.copyFull(subCategory, name));
-
-                listSubHierarchicalCategories(hierarchicalCategories, subCategory, 1, sortDir);
+                listSubHierarchicalCategories(hierarchicalCategories, subCategory, 1, childComparator);
             }
         }
 
         return hierarchicalCategories;
     }
 
+//    private List<Category> listHierarchicalCategories(List<Category> rootCategories, String sortDir) {
+//        List<Category> hierarchicalCategories = new ArrayList<>();
+//
+//        for (Category rootCategory : rootCategories) {
+//            hierarchicalCategories.add(Category.copyFull(rootCategory));
+//
+//            Set<Category> children = sortSubCategories(rootCategory.getChildren(), sortDir);
+//
+//            for (Category subCategory : children) {
+//                String name = "--" + subCategory.getName();
+//                hierarchicalCategories.add(Category.copyFull(subCategory, name));
+//
+//                listSubHierarchicalCategories(hierarchicalCategories, subCategory, 1, sortDir);
+//            }
+//        }
+//
+//        return hierarchicalCategories;
+//    }
+
     private void listSubHierarchicalCategories(List<Category> hierarchicalCategories,
-                                               Category parent, int subLevel, String sortDir) {
-        Set<Category> children = sortSubCategories(parent.getChildren(), sortDir);
+                                               Category parent, int subLevel, Comparator<Category> childComparator) {
+        Set<Category> children = sortSubCategories(parent.getChildren(), childComparator);
         int newSubLevel = subLevel + 1;
 
         for (Category subCategory : children) {
-            String name = "";
-            for (int i = 0; i < newSubLevel; i++) {
-                name += "--";
-            }
-            name += subCategory.getName();
-
+            String name = "--".repeat(newSubLevel) + subCategory.getName(); // cleaner indentation
             hierarchicalCategories.add(Category.copyFull(subCategory, name));
-
-            listSubHierarchicalCategories(hierarchicalCategories, subCategory, newSubLevel, sortDir);
+            listSubHierarchicalCategories(hierarchicalCategories, subCategory, newSubLevel, childComparator);
         }
-
     }
+
+//    private void listSubHierarchicalCategories(List<Category> hierarchicalCategories,
+//                                               Category parent, int subLevel, String sortDir) {
+//        Set<Category> children = sortSubCategories(parent.getChildren(), sortDir);
+//        int newSubLevel = subLevel + 1;
+//
+//        for (Category subCategory : children) {
+//            String name = "";
+//            for (int i = 0; i < newSubLevel; i++) {
+//                name += "--";
+//            }
+//            name += subCategory.getName();
+//
+//            hierarchicalCategories.add(Category.copyFull(subCategory, name));
+//
+//            listSubHierarchicalCategories(hierarchicalCategories, subCategory, newSubLevel, sortDir);
+//        }
+//
+//    }
 
     public Category save(Category category) {
         Category parent = category.getParent();
@@ -103,47 +138,70 @@ public class CategoryService {
             allParentIds += String.valueOf(parent.getId()) + "-";
             category.setAllParentIDs(allParentIds);
         }
-
         return repo.save(category);
     }
 
+    private String indent(int level) {
+        return "--".repeat(level);
+    }
+
     public List<Category> listCategoriesUsedInForm() {
+        // ← Always sort ascending for forms — use default strategy
+        CategorySortingStrategy formStrategy = sortingStrategyFactory.getStrategy("asc");
+        Iterable<Category> categoriesInDB = repo.findRootCategories(formStrategy.getSortForRootCategories());
+
         List<Category> categoriesUsedInForm = new ArrayList<>();
-
-        Iterable<Category> categoriesInDB = repo.findRootCategories(Sort.by("name").ascending());
-
         for (Category category : categoriesInDB) {
             categoriesUsedInForm.add(Category.copyIdAndName(category));
 
-            Set<Category> children = sortSubCategories(category.getChildren());
+            Set<Category> children = sortSubCategories(category.getChildren(), formStrategy.getComparatorForChildren());
 
             for (Category subCategory : children) {
-                String name = "--" + subCategory.getName();
+                String name = indent(1) + subCategory.getName();
                 categoriesUsedInForm.add(Category.copyIdAndName(subCategory.getId(), name));
-
-                listSubCategoriesUsedInForm(categoriesUsedInForm, subCategory, 1);
+                listSubCategoriesUsedInForm(categoriesUsedInForm, subCategory, 1, formStrategy.getComparatorForChildren());
             }
         }
 
         return categoriesUsedInForm;
     }
 
+
     private void listSubCategoriesUsedInForm(List<Category> categoriesUsedInForm,
-                                             Category parent, int subLevel) {
+                                             Category parent, int subLevel, Comparator<Category> childComparator) {
         int newSubLevel = subLevel + 1;
-        Set<Category> children = sortSubCategories(parent.getChildren());
+        Set<Category> children = sortSubCategories(parent.getChildren(), childComparator);
 
         for (Category subCategory : children) {
-            String name = "";
-            for (int i = 0; i < newSubLevel; i++) {
-                name += "--";
-            }
-            name += subCategory.getName();
-
+            String name = indent(newSubLevel) + subCategory.getName();
             categoriesUsedInForm.add(Category.copyIdAndName(subCategory.getId(), name));
-
-            listSubCategoriesUsedInForm(categoriesUsedInForm, subCategory, newSubLevel);
+            listSubCategoriesUsedInForm(categoriesUsedInForm, subCategory, newSubLevel, childComparator);
         }
+    }
+
+//    private void listSubCategoriesUsedInForm(List<Category> categoriesUsedInForm,
+//                                             Category parent, int subLevel) {
+//        int newSubLevel = subLevel + 1;
+//        Set<Category> children = sortSubCategories(parent.getChildren());
+//
+//        for (Category subCategory : children) {
+//            String name = "";
+//            for (int i = 0; i < newSubLevel; i++) {
+//                name += "--";
+//            }
+//            name += subCategory.getName();
+//
+//            categoriesUsedInForm.add(Category.copyIdAndName(subCategory.getId(), name));
+//
+//            listSubCategoriesUsedInForm(categoriesUsedInForm, subCategory, newSubLevel);
+//        }
+//    }
+
+    // ⚠️ NEW HELPER: sort using Comparator (replaces old string-based method)
+    private SortedSet<Category> sortSubCategories(Set<Category> children, Comparator<Category> comparator) {
+        SortedSet<Category> sortedChildren = new TreeSet<>(comparator);
+        sortedChildren.addAll(children);
+        return sortedChildren;
     }
 
     public Category get(Integer id) throws CategoryNotFoundException {
@@ -183,26 +241,26 @@ public class CategoryService {
         return "OK";
     }
 
-    private SortedSet<Category> sortSubCategories(Set<Category> children) {
-        return sortSubCategories(children, "asc");
-    }
+//    private SortedSet<Category> sortSubCategories(Set<Category> children) {
+//        return sortSubCategories(children, "asc");
+//    }
 
-    private SortedSet<Category> sortSubCategories(Set<Category> children, String sortDir) {
-        SortedSet<Category> sortedChildren = new TreeSet<>(new Comparator<Category>() {
-            @Override
-            public int compare(Category cat1, Category cat2) {
-                if (sortDir.equals("asc")) {
-                    return cat1.getName().compareTo(cat2.getName());
-                } else {
-                    return cat2.getName().compareTo(cat1.getName());
-                }
-            }
-        });
-
-        sortedChildren.addAll(children);
-
-        return sortedChildren;
-    }
+//    private SortedSet<Category> sortSubCategories(Set<Category> children, String sortDir) {
+//        SortedSet<Category> sortedChildren = new TreeSet<>(new Comparator<Category>() {
+//            @Override
+//            public int compare(Category cat1, Category cat2) {
+//                if (sortDir.equals("asc")) {
+//                    return cat1.getName().compareTo(cat2.getName());
+//                } else {
+//                    return cat2.getName().compareTo(cat1.getName());
+//                }
+//            }
+//        });
+//
+//        sortedChildren.addAll(children);
+//
+//        return sortedChildren;
+//    }
 
     public void updateCategoryEnabledStatus(Integer id, boolean enabled) {
         repo.updateEnabledStatus(id, enabled);
