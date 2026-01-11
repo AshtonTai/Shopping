@@ -8,6 +8,8 @@ import org.shopping.site.admin.brand.BrandService;
 import org.shopping.site.admin.category.CategoryService;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.shopping.site.admin.paging.PagingAndSortingParam;
+import org.shopping.site.admin.product.strategy.ProductSaveContext;
+import org.shopping.site.admin.product.strategy.ProductSaveStrategy;
 import org.shopping.site.admin.security.ShoppingUserDetails;
 import org.shopping.site.admin.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -31,6 +34,8 @@ public class ProductController {
     private ProductService productService;
     @Autowired private BrandService brandService;
     @Autowired private CategoryService categoryService;
+    @Autowired
+    private List<ProductSaveStrategy> saveStrategies;
 
     @GetMapping("/products")
     public String listFirstPage(Model model) {
@@ -71,38 +76,37 @@ public class ProductController {
     }
 
     @PostMapping("/products/save")
-    public String saveProduct(Product product, RedirectAttributes ra,
-                              @RequestParam(value = "fileImage", required = false) MultipartFile mainImageMultipart,
-                              @RequestParam(value = "extraImage", required = false) MultipartFile[] extraImageMultiparts,
-                              @RequestParam(name = "detailIDs", required = false) String[] detailIDs,
-                              @RequestParam(name = "detailNames", required = false) String[] detailNames,
-                              @RequestParam(name = "detailValues", required = false) String[] detailValues,
-                              @RequestParam(name = "imageIDs", required = false) String[] imageIDs,
-                              @RequestParam(name = "imageNames", required = false) String[] imageNames,
-                              @AuthenticationPrincipal ShoppingUserDetails loggedUser
-    ) throws IOException {
+    public String saveProduct(
+            Product product,
+            RedirectAttributes ra,
+            @RequestParam(value = "fileImage", required = false) MultipartFile mainImageMultipart,
+            @RequestParam(value = "extraImage", required = false) MultipartFile[] extraImageMultiparts,
+            @RequestParam(name = "detailIDs", required = false) String[] detailIDs,
+            @RequestParam(name = "detailNames", required = false) String[] detailNames,
+            @RequestParam(name = "detailValues", required = false) String[] detailValues,
+            @RequestParam(name = "imageIDs", required = false) String[] imageIDs,
+            @RequestParam(name = "imageNames", required = false) String[] imageNames,
+            @AuthenticationPrincipal ShoppingUserDetails loggedUser
+    ) {
 
-        if (!loggedUser.hasRole("Admin") && !loggedUser.hasRole("Editor")) {
-            if (loggedUser.hasRole("Salesperson")) {
-                productService.saveProductPrice(product);
-                ra.addFlashAttribute("message", "The product has been saved successfully.");
-                return defaultRedirectURL;
-            }
-        }
+        ProductSaveContext ctx = new ProductSaveContext(
+                mainImageMultipart,
+                extraImageMultiparts,
+                imageIDs,
+                imageNames,
+                detailIDs,
+                detailNames,
+                detailValues
+        );
 
-        ProductSaveHelper.setMainImageName(mainImageMultipart, product);
-        ProductSaveHelper.setExistingExtraImageNames(imageIDs, imageNames, product);
-        ProductSaveHelper.setNewExtraImageNames(extraImageMultiparts, product);
-        ProductSaveHelper.setProductDetails(detailIDs, detailNames, detailValues, product);
+        ProductSaveStrategy strategy = saveStrategies.stream()
+                .filter(s -> s.supports(loggedUser))
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException("You cannot save products"));
 
-        Product savedProduct = productService.save(product);
-
-        ProductSaveHelper.saveUploadedImages(mainImageMultipart, extraImageMultiparts, savedProduct);
-
-        ProductSaveHelper.deleteExtraImagesWeredRemovedOnForm(product);
+        strategy.save(product, ctx);
 
         ra.addFlashAttribute("message", "The product has been saved successfully.");
-
         return defaultRedirectURL;
     }
 
