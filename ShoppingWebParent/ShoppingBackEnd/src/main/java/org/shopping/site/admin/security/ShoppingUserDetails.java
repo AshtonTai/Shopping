@@ -25,8 +25,10 @@ public class ShoppingUserDetails implements UserDetails {
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
-        for (Role role : roles) {
-            authorities.add(new SimpleGrantedAuthority(role.getName()));
+        if (roles != null) {
+            for (Role role : roles) {
+                authorities.add(new SimpleGrantedAuthority(role.getName()));
+            }
         }
 
         return authorities;

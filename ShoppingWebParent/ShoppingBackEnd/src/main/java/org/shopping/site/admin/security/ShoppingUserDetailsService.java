@@ -12,13 +12,10 @@ import org.springframework.stereotype.Service;
 public class ShoppingUserDetailsService implements UserDetailsService {
 
 
-    private UserRepository userRepo;
+    private final UserRepository userRepo;
     @Autowired
     public ShoppingUserDetailsService(UserRepository userRepo) {
         this.userRepo = userRepo;
-    }
-    public ShoppingUserDetailsService(){
-
     }
 
     @Override
