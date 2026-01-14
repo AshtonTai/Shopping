@@ -4,6 +4,8 @@ import org.shopping.entity.Brand;
 import org.shopping.exeption.BrandNotFoundException;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,8 +22,18 @@ public class BrandService {
         return (List<Brand>) repo.findAll();
     }
 
-    public void listByPage(int pageNum, PagingAndSortingHelper helper) {
-        helper.listEntities(pageNum, BRANDS_PER_PAGE, repo);
+    public Page<Brand> listByPage(int pageNum, PagingAndSortingHelper helper) {
+        // Only allow sorting by valid Brand fields
+        List<String> allowedSortFields = List.of("id", "name"); // ← adjust based on your Brand entity
+
+        Pageable pageable = helper.createPageable(BRANDS_PER_PAGE, pageNum, allowedSortFields);
+
+        String keyword = helper.getKeyword();
+        if (keyword != null && !keyword.isEmpty()) {
+            return repo.findAll(keyword, pageable);
+        } else {
+            return repo.findAll(pageable);
+        }
     }
 
     public Brand save(Brand brand) {

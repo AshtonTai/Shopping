@@ -8,6 +8,7 @@ import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.shopping.site.admin.paging.PagingAndSortingParam;
 import org.shopping.site.admin.util.AmazonS3Util;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -35,10 +36,24 @@ public class BrandController {
 
     @GetMapping("/brands/page/{pageNum}")
     public String listByPage(
-            @PagingAndSortingParam(listName = "listBrands", moduleURL = "/brands") PagingAndSortingHelper helper,
-            @PathVariable(name = "pageNum") int pageNum
-    ) {
-        brandService.listByPage(pageNum, helper);
+            @PagingAndSortingParam(listName = "listBrands", moduleURL = "/brands")
+            PagingAndSortingHelper helper,
+            @PathVariable(name = "pageNum") int pageNum,
+            Model model) {
+
+        Page<Brand> page = brandService.listByPage(pageNum, helper);
+
+        // Compute pagination display values
+        long startCount = (pageNum - 1L) * BrandService.BRANDS_PER_PAGE + 1;
+        long endCount = Math.min(startCount + BrandService.BRANDS_PER_PAGE - 1, page.getTotalElements());
+
+        model.addAttribute("currentPage", pageNum);
+        model.addAttribute("totalPages", page.getTotalPages());
+        model.addAttribute("startCount", startCount);
+        model.addAttribute("endCount", endCount);
+        model.addAttribute("totalItems", page.getTotalElements());
+        model.addAttribute("listBrands", page.getContent()); // ← matches listName
+
         return "brands/brands";
     }
 

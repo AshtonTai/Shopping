@@ -13,6 +13,7 @@ import org.shopping.site.admin.product.strategy.ProductSaveStrategy;
 import org.shopping.site.admin.security.ShoppingUserDetails;
 import org.shopping.site.admin.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
 import java.util.List;
 
 @Controller
@@ -44,17 +44,23 @@ public class ProductController {
 
     @GetMapping("/products/page/{pageNum}")
     public String listByPage(
-            @PagingAndSortingParam(listName = "listProducts", moduleURL = "/products") PagingAndSortingHelper helper,
-            @PathVariable(name = "pageNum") int pageNum, Model model,
-            Integer categoryId
-    ) {
+            @PagingAndSortingParam(listName = "listProducts", moduleURL = "/products")
+            PagingAndSortingHelper helper,
+            @PathVariable int pageNum,
+            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            Model model) {
 
-        productService.listByPage(pageNum, helper, categoryId);
+        Page<Product> page = productService.listByPage(pageNum, helper, categoryId);
 
-        List<Category> listCategories = categoryService.listCategoriesUsedInForm();
+        long startCount = (pageNum - 1L) * ProductService.PRODUCTS_PER_PAGE + 1;
+        long endCount = Math.min(startCount + ProductService.PRODUCTS_PER_PAGE - 1, page.getTotalElements());
 
-        if (categoryId != null) model.addAttribute("categoryId", categoryId);
-        model.addAttribute("listCategories", listCategories);
+        model.addAttribute("currentPage", pageNum);
+        model.addAttribute("totalPages", page.getTotalPages());
+        model.addAttribute("startCount", startCount);
+        model.addAttribute("endCount", endCount);
+        model.addAttribute("totalItems", page.getTotalElements());
+        model.addAttribute("listProducts", page.getContent()); // ← matches listName
 
         return "products/products";
     }

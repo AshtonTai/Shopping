@@ -4,10 +4,8 @@ import jakarta.transaction.Transactional;
 import org.shopping.entity.Role;
 import org.shopping.entity.User;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
-import org.shopping.site.admin.paging.SearchRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -24,9 +21,6 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepo;
-
-    @Autowired
-    private SearchRepository searchRepository;
 
     @Autowired
     private RoleRepository roleRepo;
@@ -42,8 +36,16 @@ public class UserService {
         return (List<User>) userRepo.findAll(Sort.by("firstName").ascending());
     }
 
-    public void listByPage(int pageNum, PagingAndSortingHelper helper) {
-        helper.listEntities(pageNum, USERS_PER_PAGE, searchRepository);
+    public Page<User> listByPage(int pageNum, PagingAndSortingHelper helper) {
+        List<String> allowedSortFields = List.of("id", "email", "firstName", "lastName", "enabled");
+        Pageable pageable = helper.createPageable(USERS_PER_PAGE, pageNum, allowedSortFields);
+
+        String keyword = helper.getKeyword();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return userRepo.findAll(keyword, pageable);
+        } else {
+            return userRepo.findAll(pageable);
+        }
     }
 
     public List<Role> listRoles() {

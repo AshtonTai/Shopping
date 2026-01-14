@@ -13,13 +13,27 @@ public class PagingAndSortingArgumentResolver implements HandlerMethodArgumentRe
     }
 
     @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer model,
-                                  NativeWebRequest request, WebDataBinderFactory binderFactory) throws Exception {
+    public Object resolveArgument(
+            MethodParameter parameter,
+            ModelAndViewContainer model,
+            NativeWebRequest request,
+            WebDataBinderFactory binderFactory) throws Exception {
+
         PagingAndSortingParam annotation = parameter.getParameterAnnotation(PagingAndSortingParam.class);
+
         String sortDir = request.getParameter("sortDir");
         String sortField = request.getParameter("sortField");
         String keyword = request.getParameter("keyword");
 
+        // Provide defaults if missing
+        if (sortField == null || sortField.isEmpty()) {
+            sortField = "id"; // or a default field appropriate for the page
+        }
+        if (sortDir == null || sortDir.isEmpty()) {
+            sortDir = "asc";
+        }
+
+        // Add sorting metadata to model (for Thymeleaf links/buttons)
         String reverseSortDir = sortDir.equals("asc") ? "desc" : "asc";
         model.addAttribute("sortField", sortField);
         model.addAttribute("sortDir", sortDir);
@@ -27,9 +41,8 @@ public class PagingAndSortingArgumentResolver implements HandlerMethodArgumentRe
         model.addAttribute("keyword", keyword);
         model.addAttribute("moduleURL", annotation.moduleURL());
 
-
-        return new PagingAndSortingHelper(model, annotation.listName(),
-                sortField, sortDir, keyword);
+        // ✅ ONLY pass the 3 string parameters — NO 'model', NO 'listName'
+        return new PagingAndSortingHelper(sortField, sortDir, keyword);
     }
 
 }

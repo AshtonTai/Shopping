@@ -43,7 +43,7 @@
 				<tr th:each="user : ${listUsers}">
 					<td class="hideable-column">[[${user.id}]]</td>
 					<td>
-						<div th:replace="fragments :: user_photos" />
+						<div th:replace="fragments :: user_photos(${user})" />
 					</td>
 					<td class="hideable-column">[[${user.email}]]</td>
 					<td>[[${user.firstName}]]</td>

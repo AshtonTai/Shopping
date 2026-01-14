@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
@@ -25,21 +26,25 @@ public class AmazonS3Util {
         BUCKET_NAME = System.getenv("AWS_BUCKET_NAME");
     }
 
+    // Centralized S3 client with region configured
+    private static S3Client createS3Client() {
+        return S3Client.builder()
+                .region(Region.AP_SOUTHEAST_1) // 👈 Ensure this matches your bucket's region
+                .build();
+    }
+
     public static List<String> listFolder(String folderName) {
-        S3Client client = S3Client.builder().build();
+        S3Client s3 = createS3Client();
         ListObjectsRequest listRequest = ListObjectsRequest.builder()
-                .bucket(BUCKET_NAME).prefix(folderName).build();
+                .bucket(BUCKET_NAME)
+                .prefix(folderName)
+                .build();
 
-        ListObjectsResponse response = client.listObjects(listRequest);
-
+        ListObjectsResponse response = s3.listObjects(listRequest);
         List<S3Object> contents = response.contents();
-
-        ListIterator<S3Object> listIterator = contents.listIterator();
-
         List<String> listKeys = new ArrayList<>();
 
-        while (listIterator.hasNext()) {
-            S3Object object = listIterator.next();
+        for (S3Object object : contents) {
             listKeys.add(object.key());
         }
 
@@ -47,10 +52,14 @@ public class AmazonS3Util {
     }
 
     public static void uploadFile(String folderName, String fileName, InputStream inputStream) {
-        S3Client client = S3Client.builder().build();
+        S3Client client = createS3Client();
 
-        PutObjectRequest request = PutObjectRequest.builder().bucket(BUCKET_NAME)
-                .key(folderName + "/" + fileName).acl("public-read").build();
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(folderName + "/" + fileName)
+                .acl("public-read")
+                .build();
+
         try (inputStream) {
             int contentLength = inputStream.available();
             client.putObject(request, RequestBody.fromInputStream(inputStream, contentLength));
@@ -60,28 +69,32 @@ public class AmazonS3Util {
     }
 
     public static void deleteFile(String fileName) {
-        S3Client client = S3Client.builder().build();
+        S3Client client = createS3Client();
 
-        DeleteObjectRequest request = DeleteObjectRequest.builder().bucket(BUCKET_NAME)
-                .key(fileName).build();
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(fileName)
+                .build();
+
         client.deleteObject(request);
     }
 
     public static void removeFolder(String folderName) {
-        S3Client client = S3Client.builder().build();
+        S3Client client = createS3Client();
+
         ListObjectsRequest listRequest = ListObjectsRequest.builder()
-                .bucket(BUCKET_NAME).prefix(folderName + "/").build();
+                .bucket(BUCKET_NAME)
+                .prefix(folderName + "/")
+                .build();
 
         ListObjectsResponse response = client.listObjects(listRequest);
-
         List<S3Object> contents = response.contents();
 
-        ListIterator<S3Object> listIterator = contents.listIterator();
-
-        while (listIterator.hasNext()) {
-            S3Object object = listIterator.next();
-            DeleteObjectRequest request = DeleteObjectRequest.builder().bucket(BUCKET_NAME)
-                    .key(object.key()).build();
+        for (S3Object object : contents) {
+            DeleteObjectRequest request = DeleteObjectRequest.builder()
+                    .bucket(BUCKET_NAME)
+                    .key(object.key())
+                    .build();
             client.deleteObject(request);
             System.out.println("Deleted " + object.key());
         }

@@ -25,35 +25,35 @@ public class ProductService {
         return (List<Product>) repo.findAll();
     }
 
-    public void listByPage(int pageNum, PagingAndSortingHelper helper, Integer categoryId) {
-        Pageable pageable = helper.createPageable(PRODUCTS_PER_PAGE, pageNum);
+    public Page<Product> listByPage(int pageNum, PagingAndSortingHelper helper, Integer categoryId) {
+        // ✅ Define allowed sort fields for Product
+        List<String> allowedSortFields = List.of("id", "name", "price", "enabled", "createdTime");
+
+        Pageable pageable = helper.createPageable(PRODUCTS_PER_PAGE, pageNum, allowedSortFields);
         String keyword = helper.getKeyword();
-        Page<Product> page = null;
 
         if (keyword != null && !keyword.isEmpty()) {
             if (categoryId != null && categoryId > 0) {
-                String categoryIdMatch = "-" + String.valueOf(categoryId) + "-";
-                page = repo.searchInCategory(categoryId, categoryIdMatch, keyword, pageable);
+                String categoryIdMatch = "-" + categoryId + "-";
+                return repo.searchInCategory(categoryId, categoryIdMatch, keyword, pageable);
             } else {
-                page = repo.findAll(keyword, pageable);
+                return repo.findAll(keyword, pageable);
             }
         } else {
             if (categoryId != null && categoryId > 0) {
-                String categoryIdMatch = "-" + String.valueOf(categoryId) + "-";
-                page = repo.findAllInCategory(categoryId, categoryIdMatch, pageable);
+                String categoryIdMatch = "-" + categoryId + "-";
+                return repo.findAllInCategory(categoryId, categoryIdMatch, pageable);
             } else {
-                page = repo.findAll(pageable);
+                return repo.findAll(pageable);
             }
         }
-
-        helper.updateModelAttributes(pageNum, page);
     }
 
-    public void searchProducts(int pageNum, PagingAndSortingHelper helper) {
-        Pageable pageable = helper.createPageable(PRODUCTS_PER_PAGE, pageNum);
+    public Page<Product> searchProducts(int pageNum, PagingAndSortingHelper helper) {
+        List<String> allowedSortFields = List.of("id", "name", "price", "enabled", "createdTime");
+        Pageable pageable = helper.createPageable(PRODUCTS_PER_PAGE, pageNum, allowedSortFields);
         String keyword = helper.getKeyword();
-        Page<Product> page = repo.searchProductsByName(keyword, pageable);
-        helper.updateModelAttributes(pageNum, page);
+        return repo.searchProductsByName(keyword, pageable);
     }
 
     public Product save(Product product) {
@@ -71,7 +71,7 @@ public class ProductService {
         product.setUpdatedTime(new Date());
 
         Product updatedProduct = repo.save(product);
-        repo.updateReviewCountAndAverageRating(updatedProduct.getId());
+//        repo.updateReviewCountAndAverageRating(updatedProduct.getId());
 
         return updatedProduct;
     }
