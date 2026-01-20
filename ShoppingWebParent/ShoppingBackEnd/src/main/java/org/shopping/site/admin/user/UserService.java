@@ -4,19 +4,20 @@ import jakarta.transaction.Transactional;
 import org.shopping.entity.Role;
 import org.shopping.entity.User;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
+import org.shopping.site.admin.user.sort.UserSortingStrategy;
+import org.shopping.site.admin.user.sort.UserSortingStrategyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class UserService {
+
     public static final int USERS_PER_PAGE = 4;
 
     @Autowired
@@ -28,24 +29,46 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private UserSortingStrategyFactory sortingStrategyFactory; // ← NEW
+
     public User getByEmail(String email) {
         return userRepo.getUserByEmail(email);
     }
 
     public List<User> listAll() {
-        return (List<User>) userRepo.findAll(Sort.by("firstName").ascending());
+        return userRepo.findAll(org.springframework.data.domain.Sort.by("firstName").ascending());
     }
 
     public Page<User> listByPage(int pageNum, PagingAndSortingHelper helper) {
-        List<String> allowedSortFields = List.of("id", "email", "firstName", "lastName", "enabled");
-        Pageable pageable = helper.createPageable(USERS_PER_PAGE, pageNum, allowedSortFields);
-
+        String sortField = helper.getSortField();
+        String sortDir = helper.getSortDir();
         String keyword = helper.getKeyword();
+
+        String normalizedSortField = normalizeSortField(sortField); // ensures safety
+
+        UserSortingStrategy strategy = sortingStrategyFactory.getStrategy(sortDir);
+        Sort sort = strategy.getSortForUsers(normalizedSortField);
+        Pageable pageable = PageRequest.of(pageNum - 1, USERS_PER_PAGE, sort);
+
         if (keyword != null && !keyword.trim().isEmpty()) {
             return userRepo.findAll(keyword, pageable);
         } else {
             return userRepo.findAll(pageable);
         }
+    }
+
+    // Helper to sanitize and validate sort field
+    private String normalizeSortField(String sortField) {
+        if (sortField == null || sortField.trim().isEmpty()) {
+            return "firstName";
+        }
+        String field = sortField.trim();
+        Set<String> allowedFields = Set.of("id", "email", "firstName", "lastName", "roles");
+        if (allowedFields.contains(field)) {
+            return field;
+        }
+        return "firstName"; // fallback
     }
 
     public List<Role> listRoles() {
@@ -56,14 +79,12 @@ public class UserService {
         boolean isUpdatingUser = (user.getId() != null);
 
         if (isUpdatingUser) {
-            User existingUser = userRepo.findById(user.getId()).get();
-
+            User existingUser = userRepo.findById(user.getId()).orElseThrow();
             if (user.getPassword().isEmpty()) {
                 user.setPassword(existingUser.getPassword());
             } else {
                 encodePassword(user);
             }
-
         } else {
             encodePassword(user);
         }
@@ -72,7 +93,7 @@ public class UserService {
     }
 
     public User updateAccount(User userInForm) {
-        User userInDB = userRepo.findById(userInForm.getId()).get();
+        User userInDB = userRepo.findById(userInForm.getId()).orElseThrow();
 
         if (!userInForm.getPassword().isEmpty()) {
             userInDB.setPassword(userInForm.getPassword());
@@ -96,36 +117,24 @@ public class UserService {
 
     public boolean isEmailUnique(Integer id, String email) {
         User userByEmail = userRepo.getUserByEmail(email);
-
         if (userByEmail == null) return true;
 
-        boolean isCreatingNew = (id == null);
-
-        if (isCreatingNew) {
-            if (userByEmail != null) return false;
+        if (id == null) {
+            return userByEmail == null;
         } else {
-            if (userByEmail.getId() != id) {
-                return false;
-            }
+            return userByEmail.getId().equals(id);
         }
-
-        return true;
     }
 
     public User get(Integer id) throws UserNotFoundException {
-        try {
-            return userRepo.findById(id).get();
-        } catch (NoSuchElementException ex) {
-            throw new UserNotFoundException("Could not find any user with ID " + id);
-        }
+        return userRepo.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Could not find any user with ID " + id));
     }
 
     public void delete(Integer id) throws UserNotFoundException {
-        Long countById = userRepo.countById(id);
-        if (countById == null || countById == 0) {
+        if (!userRepo.existsById(id)) {
             throw new UserNotFoundException("Could not find any user with ID " + id);
         }
-
         userRepo.deleteById(id);
     }
 

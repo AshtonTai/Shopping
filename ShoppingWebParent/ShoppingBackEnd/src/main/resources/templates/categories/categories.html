@@ -16,7 +16,7 @@
 	
 	<div class="full-details">
 		<table class="table table-bordered table-striped table-hover table-responsive-xl">
-			<thead class="thead-dark">
+			<thead class="table-dark text-dark">
 				<tr>
 					<th>ID</th>
 					<th>Category Image</th>
@@ -71,7 +71,7 @@
 		<div th:replace="fragments :: pagination('categories')"></div>
 	</div>
 	
-	<th:block th:unless="${keyword != null}">
+	<div th:unless="${keyword != null}">
 	<div th:replace="fragments :: pagination('top-level categories')"></div>
 	</div>
 	

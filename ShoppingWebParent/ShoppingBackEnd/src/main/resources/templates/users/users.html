@@ -1,95 +1,92 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments :: page_head('Users - Shopme Admin', 'none')" />
+<head th:replace="~{fragments :: page_head('Users - Shopme Admin', 'none')}" />
 <body>
 <div class="container-fluid">
-	<div th:replace="navigation :: menu"></div>
+	<div th:replace="~{navigation :: menu}"></div>
 	<div>
-		<h2>Manage Users</h2>	
+		<h2>Manage Users</h2>
 		<a th:href="@{/users/new}" class="fas fa-user-plus fa-2x icon-dark mr-2"></a>
-		
 		<a th:href="@{/users/export/csv}" class="fas fa-file-csv fa-2x icon-dark mr-2"></a>
-		
-		<a th:href="@{/users/export/excel}" class="fas fa-file-excel fa-2x icon-dark mr-2"></a>		
-		
-		<a th:href="@{/users/export/pdf}" class="fas fa-file-pdf fa-2x icon-dark"></a>		
+		<a th:href="@{/users/export/excel}" class="fas fa-file-excel fa-2x icon-dark mr-2"></a>
+		<a th:href="@{/users/export/pdf}" class="fas fa-file-pdf fa-2x icon-dark"></a>
 	</div>
-	
-	<div th:replace="fragments :: search_form_and_message" />
-	
+
+	<div th:replace="~{fragments :: search_form_and_message}"></div>
+
 	<div class="full-details">
 		<table class="table table-bordered table-striped table-hover table-responsive-xl">
-			<thead class="thead-dark">
-				<tr>
-					<th class="hideable-column">
-						<th th:replace="fragments :: column_link('id', 'User ID', 'tag')" />
-					</th>
-					
-					<th>Photos</th>
-					
-					<th class="hideable-column">
-						<th th:replace="fragments :: column_link('email', 'E-mail', 'tag')" />
-					</th>
-					
-					<th th:replace="fragments :: column_link('firstName', 'First Name', 'none')" />
-					<th th:replace="fragments :: column_link('lastName', 'Last Name', 'none')" />
-					
-					<th>Roles</th>
-					<th th:replace="fragments :: column_link('enabled', 'Enabled', 'none')" />
-					<th></th>
-				</tr>								
+			<thead class="table-dark text-dark">
+			<tr>
+				<th th:replace="~{fragments :: column_link('id', 'User ID', 'tag')}"></th>
+				<th>Photos</th>
+				<th th:replace="~{fragments :: column_link('email', 'E-mail', 'tag')}"></th>
+				<th th:replace="~{fragments :: column_link('firstName', 'First Name', '/users')}"></th></th>
+				<th th:replace="~{fragments :: column_link('lastName', 'Last Name', 'none')}"></th>
+				<!--No Sorting needed-->
+				<th>Roles</th>
+				<th>Enabled</th>
+				<th></th>
+			</tr>
 			</thead>
 			<tbody>
-				<tr th:each="user : ${listUsers}">
-					<td class="hideable-column">[[${user.id}]]</td>
-					<td>
-						<div th:replace="fragments :: user_photos(${user})" />
-					</td>
-					<td class="hideable-column">[[${user.email}]]</td>
-					<td>[[${user.firstName}]]</td>
-					<td>[[${user.lastName}]]</td>
-					<td>[[${user.roles}]]</td>
-					
-					<td>
-						<div th:replace="fragments :: status(${user.enabled}, 'user', '/users/' + ${user.id})" />
-					</td>
-					
-					<td>
-						<div th:replace="fragments :: edit('user', '/users/edit/' + ${user.id})" />
-						&nbsp;&nbsp;
-						<div th:replace="fragments :: delete('user', ${user.id}, '/users/delete/' + ${user.id}, true)" />
-					</td>
-				</tr>
+			<tr th:each="user : ${listUsers}">
+				<td class="hideable-column">[[${user.id}]]</td>
+				<td><div th:replace="~{fragments :: user_photos(${user})}"></div></td>
+				<td class="hideable-column">[[${user.email}]]</td>
+				<td>[[${user.firstName}]]</td>
+				<td>[[${user.lastName}]]</td>
+				<td>
+					<span th:if="${#lists.isEmpty(user.roles)}">-</span>
+					<span th:unless="${#lists.isEmpty(user.roles)}">
+            <span th:each="role, iter : ${user.roles}"
+				  th:text="${iter.index == 0 ? role.name : ', ' + role.name}"></span>
+          </span>
+				</td>
+				<td><div th:replace="~{fragments :: status(${user.enabled}, 'user', '/users/' + ${user.id})}"></div></td>
+				<td>
+					<div th:replace="~{fragments :: edit('user', '/users/edit/' + ${user.id})}"></div>
+					&nbsp;&nbsp;
+					<div th:replace="~{fragments :: delete('user', ${user.id}, '/users/delete/' + ${user.id}, true)}"></div>
+				</td>
+			</tr>
 			</tbody>
 		</table>
 	</div>
-	
+
 	<div class="less-details">
 		<div th:each="user : ${listUsers}" class="row m-1">
 			<div class="col-4">
-				<div th:replace="fragments :: user_photos" />			
+				<div th:replace="~{fragments :: user_photos(${user})}"></div>
 			</div>
 			<div class="col-8">
 				<div>[[${user.fullName}]]</div>
-				<div>[[${user.roles}]]</div>
+				<div>
+					<!-- ✅ SAME SAFE ROLES DISPLAY -->
+					<span th:if="${#lists.isEmpty(user.roles)}">-</span>
+					<span th:unless="${#lists.isEmpty(user.roles)}">
+                        <span th:each="role, iter : ${user.roles}"
+							  th:text="${iter.index == 0 ? role.name : ', ' + role.name}"></span>
+                    </span>
+				</div>
 				<div class="mt-2">
-					<div th:replace="fragments :: status(${user.enabled}, 'user', '/users/' + ${user.id})" />
-					&nbsp; 			
-					<div th:replace="fragments :: edit('user', '/users/edit/' + ${user.id})" />
-					&nbsp; 
-					<div th:replace="fragments :: delete('user', ${user.id}, '/users/delete/' + ${user.id}, true)" />
+					<div th:replace="~{fragments :: status(${user.enabled}, 'user', '/users/' + ${user.id})}"></div>
+					&nbsp;
+					<div th:replace="~{fragments :: edit('user', '/users/edit/' + ${user.id})}"></div>
+					&nbsp;
+					<div th:replace="~{fragments :: delete('user', ${user.id}, '/users/delete/' + ${user.id}, true)}"></div>
 				</div>
 			</div>
 			<div>&nbsp;</div>
 		</div>
 	</div>
-	
-	<div th:replace="fragments :: pagination('users')"></div>
-	
-	<div th:replace="modal_fragments :: confirm_modal" />
-		
-	<div th:replace="fragments :: footer"></div>
-	
+
+	<div th:replace="~{fragments :: pagination('users')}"></div>
+
+	<div th:replace="~{modal_fragments :: confirm_modal}"></div>
+
+	<div th:replace="~{fragments :: footer}"></div>
+
 </div>
 <script th:src="@{/js/common_list.js}"></script>
 <script type="text/javascript">

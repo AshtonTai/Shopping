@@ -19,13 +19,15 @@
 	<p>Shopme Control Panel - Copyright &copy; Shopme</p>
 </div>
 
-<th th:fragment="column_link(fieldName, columnLabel, removeTag)" th:remove="${removeTag}">
+<th th:fragment="column_link(fieldName, columnLabel, options)"
+	th:class="${options == 'tag' ? 'hideable-column' :
+               options == 'none' ? null : options}">
 	<a class="text-white"
-	   th:href="@{${moduleURL} + '/page/' + ${currentPage} + '?sortField=' + ${fieldName}  +'&sortDir=' + ${sortField != fieldName ? sortDir : reverseSortDir} + ${keyword != null ? '&keyword=' + keyword : ''} + ${categoryId != null ? '&categoryId=' + categoryId : ''}}">
+	   th:href="@{${moduleURL} + '/page/' + ${currentPage} + '?sortField=' + ${fieldName} +'&sortDir=' + ${sortField != fieldName ? sortDir : reverseSortDir} + ${keyword != null ? '&keyword=' + keyword : ''} + ${categoryId != null ? '&categoryId=' + categoryId : ''}}">
 		[[${columnLabel}]]
 	</a>
 	<span th:if="${sortField == fieldName}"
-		  th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}" ></span>
+		  th:class="${sortDir == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"></span>
 </th>
 
 <a th:fragment="page_link(pageNum, label)"

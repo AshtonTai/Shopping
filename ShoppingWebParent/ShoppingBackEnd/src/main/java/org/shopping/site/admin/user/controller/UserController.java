@@ -12,7 +12,6 @@ import org.shopping.site.admin.paging.PagingAndSortingParam;
 import org.shopping.site.admin.user.UserNotFoundException;
 import org.shopping.site.admin.user.UserService;
 import org.shopping.site.admin.util.AmazonS3Util;
-import org.shopping.site.admin.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -27,8 +26,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Controller
 public class UserController {
@@ -43,8 +40,24 @@ public class UserController {
     @GetMapping("/users/page/{pageNum}")
     public String listByPage(
             @PagingAndSortingParam(listName = "listUsers", moduleURL = "/users") PagingAndSortingHelper helper,
-            @PathVariable(name = "pageNum") int pageNum) {
-        service.listByPage(pageNum, helper);
+            @PathVariable(name = "pageNum") int pageNum,
+            Model model) {
+
+        Page<User> page = service.listByPage(pageNum, helper);
+
+        // For fragment: MUST match fragment's expected variable names
+        model.addAttribute("currentPage", pageNum); // ← NOT "pageNum"!
+        model.addAttribute("sortField", helper.getSortField());
+        model.addAttribute("sortDir", helper.getSortDir());
+        model.addAttribute("reverseSortDir", "asc".equals(helper.getSortDir()) ? "desc" : "asc");
+        model.addAttribute("keyword", helper.getKeyword());
+        model.addAttribute("moduleURL", "/users");
+
+        // Data
+        model.addAttribute("listUsers", page.getContent());
+        model.addAttribute("totalPages", page.getTotalPages());
+        model.addAttribute("totalItems", page.getTotalElements());
+
 
         return "users/users";
     }
