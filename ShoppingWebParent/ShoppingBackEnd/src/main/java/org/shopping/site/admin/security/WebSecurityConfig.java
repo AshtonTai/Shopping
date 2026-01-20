@@ -51,7 +51,7 @@ public class WebSecurityConfig {
                         .permitAll()
                 )
                 .rememberMe(rm -> rm
-                        .key("shopme-admin-secret-key") // fixed key for dev
+                        .key("shopme-admin-secret-key")
                         .tokenValiditySeconds(86400)
                 );
 
@@ -60,6 +60,13 @@ public class WebSecurityConfig {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring().requestMatchers("/images/**", "/js/**", "/webjars/**");
+        return web -> web.ignoring()
+                .requestMatchers(
+                        "/images/**",
+                        "/js/**",
+                        "/css/**",
+                        "/webjars/**",
+                        "/style.css"
+                );
     }
 }
