@@ -50,17 +50,21 @@ public class ProductController {
             @RequestParam(value = "categoryId", required = false) Integer categoryId,
             Model model) {
 
+        // Fetch products
         Page<Product> page = productService.listByPage(pageNum, helper, categoryId);
+
+        // Get all categories for the dropdown
+        List<Category> listCategories = categoryService.listAll();
 
         long startCount = (pageNum - 1L) * ProductService.PRODUCTS_PER_PAGE + 1;
         long endCount = Math.min(startCount + ProductService.PRODUCTS_PER_PAGE - 1, page.getTotalElements());
 
-        //Sorting & URL params
         String sortField = helper.getSortField();
         String sortDir = helper.getSortDir();
         String reverseSortDir = sortDir.equals("asc") ? "desc" : "asc";
 
-        model.addAttribute("moduleURL", "/products");// ← critical for fragment
+        // Add everything to model
+        model.addAttribute("moduleURL", "/products");
         model.addAttribute("currentPage", pageNum);
         model.addAttribute("sortField", sortField);
         model.addAttribute("sortDir", sortDir);
@@ -68,7 +72,10 @@ public class ProductController {
         model.addAttribute("keyword", helper.getKeyword());
         model.addAttribute("categoryId", categoryId != null ? categoryId : 0);
 
-        //Pagination & data
+        // Add categories for dropdown
+        model.addAttribute("listCategories", listCategories);
+
+        // Pagination & data
         model.addAttribute("listProducts", page.getContent());
         model.addAttribute("totalPages", page.getTotalPages());
         model.addAttribute("totalItems", page.getTotalElements());

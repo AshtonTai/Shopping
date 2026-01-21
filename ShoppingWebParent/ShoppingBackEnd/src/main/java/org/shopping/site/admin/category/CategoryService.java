@@ -24,8 +24,11 @@ public class CategoryService {
     @Autowired
     private CategorySortingStrategyFactory sortingStrategyFactory; // ← NEW
 
+    public List<Category> listAll() {
+        return repo.findAll();
+    }
+
     public List<Category> listByPage(CategoryPageInfo pageInfo, int pageNum, String sortDir, String keyword) {
-        // ← Use strategy instead of inline if/else
         CategorySortingStrategy strategy = sortingStrategyFactory.getStrategy(sortDir);
         Pageable pageable = PageRequest.of(pageNum - 1, ROOT_CATEGORIES_PER_PAGE, strategy.getSortForRootCategories());
 
