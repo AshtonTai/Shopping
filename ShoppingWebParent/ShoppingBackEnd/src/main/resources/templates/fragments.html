@@ -63,7 +63,6 @@
 	</th:block>
 </div>
 
-<!-- ✅ CORRECTED: Named 'pagination', accepts one parameter -->
 <div th:fragment="pagination(entityName)" th:remove="tag">
 	<div class="text-center m-1" th:if="${totalItems > 0}">
 		<span>Showing [[${entityName}]] # [[${startCount}]] to [[${endCount}]] of [[${totalItems}]]</span>

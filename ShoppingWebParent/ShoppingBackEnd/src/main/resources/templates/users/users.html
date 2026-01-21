@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head th:replace="~{fragments :: page_head('Users - Shopme Admin', 'none')}" />
 <body>
 <div class="container-fluid">
@@ -25,7 +26,9 @@
 				<th th:replace="~{fragments :: column_link('lastName', 'Last Name', 'none')}"></th>
 				<!--No Sorting needed-->
 				<th>Roles</th>
-				<th>Enabled</th>
+				<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
+					<th>Enabled</th>
+				</th:block>
 				<th></th>
 			</tr>
 			</thead>
@@ -62,7 +65,6 @@
 			<div class="col-8">
 				<div>[[${user.fullName}]]</div>
 				<div>
-					<!-- ✅ SAME SAFE ROLES DISPLAY -->
 					<span th:if="${#lists.isEmpty(user.roles)}">-</span>
 					<span th:unless="${#lists.isEmpty(user.roles)}">
                         <span th:each="role, iter : ${user.roles}"
@@ -71,7 +73,7 @@
 				</div>
 				<div class="mt-2">
 					<div th:replace="~{fragments :: status(${user.enabled}, 'user', '/users/' + ${user.id})}"></div>
-					&nbsp;
+						&nbsp;
 					<div th:replace="~{fragments :: edit('user', '/users/edit/' + ${user.id})}"></div>
 					&nbsp;
 					<div th:replace="~{fragments :: delete('user', ${user.id}, '/users/delete/' + ${user.id}, true)}"></div>

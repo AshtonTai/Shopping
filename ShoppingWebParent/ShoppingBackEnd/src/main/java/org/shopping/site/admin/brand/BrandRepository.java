@@ -15,11 +15,9 @@ public interface BrandRepository extends SearchRepository<Brand, Integer> {
 
     Brand findByName(String name);
 
-    // ✅ Search by keyword
     @Query("SELECT b FROM Brand b WHERE b.name LIKE %:keyword%")
     Page<Brand> findAll(@Param("keyword") String keyword, Pageable pageable);
 
-    // ✅ Projection: ID and name only
     @Query("SELECT NEW Brand(b.id, b.name) FROM Brand b ORDER BY b.name ASC")
     List<Brand> findAllBrandsForDropdown(); // ← better name than findAll()
 }

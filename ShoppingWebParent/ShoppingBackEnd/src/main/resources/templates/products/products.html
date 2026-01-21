@@ -49,28 +49,17 @@
 	<div class="full-details">
 		<table class="table table-bordered table-striped table-hover table-responsive-xl">
 			<thead class="table-dark text-dark">
-				<tr>
-					<th class="hideable-column"> 
-					<th th:replace="fragments :: column_link('id', 'ID', 'tag')" />
-					</th>
-					
-					<th>Main Image</th>
-					<th th:replace="fragments :: column_link('name', 'Product Name', 'none')" />
-					
-					<th class="hideable-column"> 
-					<th th:replace="fragments :: column_link('brand', 'Brand', 'tag')" />
-					</th>
-					
-					<th class="hideable-column">
-					<th th:replace="fragments :: column_link('category', 'Category', 'tag')" />
-					</th>
-					
-					<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
+			<tr>
+				<th th:replace="fragments :: column_link('id', 'ID', 'tag')" />
+				<th>Main Image</th>
+				<th th:replace="fragments :: column_link('name', 'Product Name', 'none')" />
+				<th>Brand</th>
+				<th>Category</th>
+				<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
 					<th>Enabled</th>
-					</th:block>
-					
-					<th></th>
-				</tr>								
+				</th:block>
+				<th></th>
+			</tr>
 			</thead>
 			<tbody>
 				<tr th:each="product : ${listProducts}">
@@ -130,12 +119,12 @@
 						></a>
 						
 					<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor', 'Salesperson')">
-					&nbsp; 	
+					&nbsp;
 					<div th:replace="fragments :: edit('product', '/products/edit/' + ${product.id})" />
 					</th:block>
 					
 					<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
-					&nbsp; 
+					&nbsp;
 					<div th:replace="fragments :: delete('product', ${product.id}, '/products/delete/' + ${product.id}, true)" />
 					</th:block>		
 				</div>

@@ -55,12 +55,25 @@ public class ProductController {
         long startCount = (pageNum - 1L) * ProductService.PRODUCTS_PER_PAGE + 1;
         long endCount = Math.min(startCount + ProductService.PRODUCTS_PER_PAGE - 1, page.getTotalElements());
 
+        //Sorting & URL params
+        String sortField = helper.getSortField();
+        String sortDir = helper.getSortDir();
+        String reverseSortDir = sortDir.equals("asc") ? "desc" : "asc";
+
+        model.addAttribute("moduleURL", "/products");// ← critical for fragment
         model.addAttribute("currentPage", pageNum);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", reverseSortDir);
+        model.addAttribute("keyword", helper.getKeyword());
+        model.addAttribute("categoryId", categoryId != null ? categoryId : 0);
+
+        //Pagination & data
+        model.addAttribute("listProducts", page.getContent());
         model.addAttribute("totalPages", page.getTotalPages());
+        model.addAttribute("totalItems", page.getTotalElements());
         model.addAttribute("startCount", startCount);
         model.addAttribute("endCount", endCount);
-        model.addAttribute("totalItems", page.getTotalElements());
-        model.addAttribute("listProducts", page.getContent()); // ← matches listName
 
         return "products/products";
     }

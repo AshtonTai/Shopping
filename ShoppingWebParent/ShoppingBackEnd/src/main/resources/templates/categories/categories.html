@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head th:replace="fragments :: page_head('Categories - Shopme Admin', 'none')" />
 <body>
 <div class="container-fluid">
@@ -22,7 +23,9 @@
 					<th>Category Image</th>
 					<th th:replace="fragments :: column_link('name', 'Category Name', 'none')" />						
 					<th class="hideable-column">Alias</th>
-					<th>Enabled</th>
+					<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
+						<th>Enabled</th>
+					</th:block>
 					<th></th>
 				</tr>								
 			</thead>

@@ -24,7 +24,7 @@ public class BrandService {
 
     public Page<Brand> listByPage(int pageNum, PagingAndSortingHelper helper) {
         // Only allow sorting by valid Brand fields
-        List<String> allowedSortFields = List.of("id", "name"); // ← adjust based on your Brand entity
+        List<String> allowedSortFields = List.of("id", "name");
 
         Pageable pageable = helper.createPageable(BRANDS_PER_PAGE, pageNum, allowedSortFields);
 

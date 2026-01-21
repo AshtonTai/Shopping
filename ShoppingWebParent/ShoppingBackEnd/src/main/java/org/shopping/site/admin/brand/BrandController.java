@@ -43,16 +43,27 @@ public class BrandController {
 
         Page<Brand> page = brandService.listByPage(pageNum, helper);
 
-        // Compute pagination display values
         long startCount = (pageNum - 1L) * BrandService.BRANDS_PER_PAGE + 1;
         long endCount = Math.min(startCount + BrandService.BRANDS_PER_PAGE - 1, page.getTotalElements());
 
+        String sortField = helper.getSortField();
+        String sortDir = helper.getSortDir();
+        String reverseSortDir = sortDir.equals("asc") ? "desc" : "asc";
+
+        model.addAttribute("moduleURL", "/brands");
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", reverseSortDir);
+        model.addAttribute("keyword", helper.getKeyword());
+        model.addAttribute("currentPage", pageNum);
+
+        // Pagination & data
         model.addAttribute("currentPage", pageNum);
         model.addAttribute("totalPages", page.getTotalPages());
         model.addAttribute("startCount", startCount);
         model.addAttribute("endCount", endCount);
         model.addAttribute("totalItems", page.getTotalElements());
-        model.addAttribute("listBrands", page.getContent()); // ← matches listName
+        model.addAttribute("listBrands", page.getContent());
 
         return "brands/brands";
     }

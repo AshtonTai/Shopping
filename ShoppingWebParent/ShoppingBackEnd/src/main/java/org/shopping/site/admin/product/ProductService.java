@@ -26,8 +26,7 @@ public class ProductService {
     }
 
     public Page<Product> listByPage(int pageNum, PagingAndSortingHelper helper, Integer categoryId) {
-        // ✅ Define allowed sort fields for Product
-        List<String> allowedSortFields = List.of("id", "name", "price", "enabled", "createdTime");
+        List<String> allowedSortFields = List.of("id", "name");
 
         Pageable pageable = helper.createPageable(PRODUCTS_PER_PAGE, pageNum, allowedSortFields);
         String keyword = helper.getKeyword();
