@@ -85,7 +85,7 @@
 					
 					<td>
 						<a class="fas fa-file-alt fa-2x icon-green link-detail"
-							th:href="@{'/products/detail/' + ${product.id}}"
+						   th:href="@{/products/detail/{id}(id=${product.id})}"
 							title="View details of this product"
 							></a>
 							

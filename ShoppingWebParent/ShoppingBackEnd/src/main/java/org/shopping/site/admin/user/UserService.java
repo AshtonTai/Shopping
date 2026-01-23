@@ -6,13 +6,15 @@ import org.shopping.entity.User;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.shopping.site.admin.user.sort.UserSortingStrategy;
 import org.shopping.site.admin.user.sort.UserSortingStrategyFactory;
+import org.shopping.site.admin.util.AmazonS3Util;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.shopping.site.admin.user.UserNotFoundException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -131,11 +133,12 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("Could not find any user with ID " + id));
     }
 
-    public void delete(Integer id) throws UserNotFoundException {
-        if (!userRepo.existsById(id)) {
-            throw new UserNotFoundException("Could not find any user with ID " + id);
-        }
-        userRepo.deleteById(id);
+
+
+    public void delete(Integer id) {
+        AmazonS3Util.removeFolder("user-photos/" + id);
+
+        userRepo.deleteByIdWithoutLocking(id);
     }
 
     public void updateUserEnabledStatus(Integer id, boolean enabled) {

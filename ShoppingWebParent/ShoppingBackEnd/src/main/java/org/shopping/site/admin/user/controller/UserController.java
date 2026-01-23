@@ -127,22 +127,11 @@ public class UserController {
         }
     }
 
-    //ELIMINAR USUARIO
+
     @GetMapping("/users/delete/{id}")
-    public String deleteUser(@PathVariable(name = "id") Integer id,
-                             Model model,
-                             RedirectAttributes redirectAttributes) {
-        try {
-            service.delete(id);
-            String userPhotosDir = "user-photos/" + id;
-            AmazonS3Util.removeFolder(userPhotosDir);
-
-            redirectAttributes.addFlashAttribute("message",
-                    "The user ID " + id + " has been deleted successfully");
-        } catch (UserNotFoundException ex) {
-            redirectAttributes.addFlashAttribute("message", ex.getMessage());
-        }
-
+    public String deleteUser(@PathVariable Integer id, RedirectAttributes ra) {
+        service.delete(id);
+        ra.addFlashAttribute("message", "User deleted successfully.");
         return defaultRedirectURL;
     }
 
