@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments :: page_head('Customer Reviews', 'none')" />
+<body>
+
+<div class="container-fluid">
+    <div th:replace="navigation :: menu"></div>
+    <div>
+        <h2>Manage Reviews</h2>
+    </div>
+
+<div class="container mt-4">
+    <h2>Customer Reviews</h2>
+
+    <div class="row" th:each="review : ${listReviews}">
+        <div class="col-md-12 mb-3 p-3 border rounded">
+            <div>
+                <strong>[[${review.product.name}]]</strong>
+                by <em>[[${review.user.fullName}]]</em>
+            </div>
+            <div class="text-warning">
+                <!-- Render stars -->
+                <span th:each="i : ${#numbers.sequence(1, 5)}">
+                    <i th:class="${i <= review.rating ? 'fas fa-star' : 'far fa-star'}"></i>
+                </span>
+                ([[${review.rating}]])
+            </div>
+            <div><strong>[[${review.headline}]]</strong></div>
+            <div>[[${review.comment}]]</div>
+            <small class="text-muted">[[${#temporals.format(review.reviewTime, 'yyyy-MM-dd HH:mm')}]]</small>
+        </div>
+    </div>
+
+    <!-- Simple pagination -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/reviews/public(page=${currentPage - 1})}">Previous</a>
+            </li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(1, totalPages)}"
+                th:classappend="${i == currentPage ? 'active' : ''}">
+                <a class="page-link" th:href="@{/reviews/public(page=${i})}">[[${i}]]</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/reviews/public(page=${currentPage + 1})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</div>
+</body>
+</html>

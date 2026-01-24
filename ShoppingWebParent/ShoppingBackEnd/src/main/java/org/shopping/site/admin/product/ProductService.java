@@ -2,6 +2,8 @@ package org.shopping.site.admin.product;
 
 import jakarta.transaction.Transactional;
 import org.shopping.entity.product.Product;
+import org.shopping.entity.review.Review;
+import org.shopping.site.admin.review.ReviewRepository;
 import org.shopping.exeption.ProductNotFoundException;
 import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,9 @@ public class ProductService {
 
     @Autowired
     private ProductRepository repo;
+
+    @Autowired
+    private ReviewRepository reviewRepository;
 
     public List<Product> listAll() {
         return (List<Product>) repo.findAll();
@@ -118,6 +123,30 @@ public class ProductService {
             return repo.findById(id).get();
         } catch (NoSuchElementException ex) {
             throw new ProductNotFoundException("Could not find any product with ID " + id);
+        }
+    }
+
+    public void recalculateReviewStats(Integer productId) {
+        try {
+            Product product = get(productId);
+
+            List<Review> reviews = reviewRepository.findByProduct_Id(productId);
+
+            int count = reviews.size();
+            double sum = reviews.stream()
+                    .mapToInt(Review::getRating)
+                    .sum();
+
+            float avg = count > 0 ? (float) (sum / count) : 0f;
+            avg = Math.round(avg * 10) / 10.0f; // Round to 1 decimal
+
+            product.setReviewCount(count);
+            product.setAverageRating(avg);
+
+            repo.save(product);
+
+        } catch (ProductNotFoundException ex) {
+            System.err.println("Warning: Cannot recalculate stats for non-existent product ID: " + productId);
         }
     }
 }

@@ -37,6 +37,11 @@
     <dependencies>
         <!-- Your backend-specific deps -->
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.shopping</groupId>
             <artifactId>ShoppingCommon</artifactId>
             <version>0.0.1-SNAPSHOT</version>
@@ -72,6 +77,14 @@
             <artifactId>jquery</artifactId>
             <version>3.7.1</version>
         </dependency>
+
+        <!-- H2 Database for Testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>

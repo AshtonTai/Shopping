@@ -8,11 +8,9 @@ import org.shopping.site.admin.user.sort.UserSortingStrategy;
 import org.shopping.site.admin.user.sort.UserSortingStrategyFactory;
 import org.shopping.site.admin.util.AmazonS3Util;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.shopping.site.admin.user.UserNotFoundException;
 
 import java.util.*;
 
@@ -33,6 +31,43 @@ public class UserService {
 
     @Autowired
     private UserSortingStrategyFactory sortingStrategyFactory; // ← NEW
+
+    @Transactional
+    public void registerCustomer(User user) {
+        // 1. Email uniqueness
+        if (userRepo.existsByEmail(user.getEmail())) {
+            throw new IllegalArgumentException("There is already an account with this email: " + user.getEmail());
+        }
+
+        // 2. Encode password
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+
+        // 3. Fetch Customer role — CRITICAL!
+        Role customerRole = roleRepo.findByName("Customer");
+        if (customerRole == null) {
+            throw new IllegalStateException("System misconfiguration: 'Customer' role is missing.");
+        }
+
+        // 4. Clear any existing roles (safety)
+        user.getRoles().clear();
+        user.addRole(customerRole);
+
+        // 5. Set defaults
+        user.setEnabled(true);
+        user.setPhotos(null);
+
+        // 6. Save and VERIFY
+        try {
+            User savedUser = userRepo.save(user);
+            System.out.println(">>> [SUCCESS] User saved with ID: " + savedUser.getId());
+            System.out.println(">>> [SUCCESS] Roles after save: " + savedUser.getRoles());
+        } catch (Exception e) {
+            System.err.println(">>> [SAVE FAILED] Exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
 
     public User getByEmail(String email) {
         return userRepo.getUserByEmail(email);

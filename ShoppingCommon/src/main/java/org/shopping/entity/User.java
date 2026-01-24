@@ -3,6 +3,7 @@ package org.shopping.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -15,6 +16,8 @@ import java.util.Set;
 @Table(name = "users")
 public class User {
 
+    @Getter
+    @Setter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -47,6 +50,7 @@ public class User {
         this.firstName = firstName;
         this.lastName = lastName;
     }
+
     @Transient
     public void addRole(Role role){
         this.roles.add(role);

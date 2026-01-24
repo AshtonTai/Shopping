@@ -19,6 +19,10 @@ public class ShoppingUserDetails implements UserDetails {
         this.user = user;
     }
 
+    public Integer getId() {
+        return user.getId();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<Role> roles = user.getRoles();

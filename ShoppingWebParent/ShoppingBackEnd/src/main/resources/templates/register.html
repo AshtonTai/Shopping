@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+    <title>Register - Shopme</title>
+
+    <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" />
+</head>
+<body>
+<div class="container-fluid text-center">
+
+    <div>
+        <img th:src="@{/images/ShopmeAdminBig.png}" class="img-fluid" />
+    </div>
+
+    <form th:action="@{/register}" method="post" th:object="${user}" style="max-width: 350px; margin: 0 auto">
+        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <div class="border border-secondary rounded p-3">
+            <p>Create Your Account</p>
+
+            <p>
+                <input type="email" th:field="*{email}" class="form-control" placeholder="E-mail" required />
+            </p>
+            <p>
+                <input type="text" th:field="*{firstName}" class="form-control" placeholder="First Name" required />
+            </p>
+            <p>
+                <input type="text" th:field="*{lastName}" class="form-control" placeholder="Last Name" required />
+            </p>
+            <p>
+                <input type="password" id="password" th:field="*{password}" class="form-control" placeholder="Password" minlength="6" required />
+            </p>
+            <p>
+                <input type="password" id="confirmPassword" class="form-control" name="confirmPassword" placeholder="Confirm Password" required />
+            </p>
+
+            <p>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </p>
+
+            <p class="mt-2">
+                <a th:href="@{/login}" class="text-decoration-none">
+                    <small>Already have an account? <strong>Login here</strong></small>
+                </a>
+            </p>
+        </div>
+    </form>
+
+    <div>
+        <p>Shopme - Copyright &copy; Shopme</p>
+    </div>
+
+</div>
+
+<script>
+    // Simple password match validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirmPassword').value;
+        if (password !== confirm) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
+</body>
+</html>

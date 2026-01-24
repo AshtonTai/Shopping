@@ -1,113 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<body>
+
 <div class="modal-header">
 	<h4 class="modal-title">Product Details</h4>
-	<button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+	<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
 <div>
 	<ul class="nav nav-tabs" id="myTab" role="tablist">
-	  <li class="nav-item">
-	    <a class="nav-link active" data-bs-toggle="tab" href="#overview" role="tab">Overview</a>
-	  </li>
-	  <li class="nav-item">
-	    <a class="nav-link" data-bs-toggle="tab" href="#description" role="tab">Description</a>
-	  </li>
-	  <li class="nav-item">
-	    <a class="nav-link" data-bs-toggle="tab" href="#images" role="tab">Images</a>
-	  </li>
-	  <li class="nav-item">
-	    <a class="nav-link" data-bs-toggle="tab" href="#details" role="tab">Details</a>
-	  </li>
-	  <li class="nav-item">
-	    <a class="nav-link" data-bs-toggle="tab" href="#shipping" role="tab">Shipping</a>
-	  </li>		  
+		<li class="nav-item">
+			<a class="nav-link active" data-bs-toggle="tab" href="#overview" role="tab">Overview</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" data-bs-toggle="tab" href="#description" role="tab">Description</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" data-bs-toggle="tab" href="#images" role="tab">Images</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" data-bs-toggle="tab" href="#details" role="tab">Details</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" data-bs-toggle="tab" href="#shipping" role="tab">Shipping</a>
+		</li>
 	</ul>
-	
-	<div class="tab-content">
-	  <div class="tab-pane active p-3" id="overview" role="tabpanel">
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Product Name:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.name}" readonly />
+
+	<div class="tab-content p-3">
+		<!-- Overview Tab -->
+		<div class="tab-pane active" id="overview" role="tabpanel">
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Product Name:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.name}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Alias:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.alias}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Brand:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.brand?.name}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Category:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.category?.name}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Enabled:</label>
+				<div class="col-sm-9">
+					<input type="checkbox" th:checked="${product.enabled}" disabled />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">In-Stock:</label>
+				<div class="col-sm-9">
+					<input type="checkbox" th:checked="${product.inStock}" disabled />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Cost:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.cost}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Price:</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.price}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Discount (%):</label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" th:value="${product.discountPercent}" readonly />
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Updated Time:</label>
+				<div class="col-sm-9">
+					<span th:text="${#dates.format(product.updatedTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Review Count:</label>
+				<div class="col-sm-9">
+					<span>[[${product.reviewCount}]] reviews</span>
+				</div>
+			</div>
+
+			<div class="form-group row mb-2">
+				<label class="col-sm-3 col-form-label">Avg Rating:</label>
+				<div class="col-sm-9">
+				<span>
+					<span th:if="${product.averageRating > 0}">
+						<span th:each="i : ${#numbers.sequence(1, 5)}">
+							<i th:class="${i <= product.averageRating ? 'fas fa-star text-warning' : 'far fa-star'}"></i>
+						</span>
+						([[${#numbers.formatDecimal(product.averageRating, 1, 2)}]])
+					</span>
+					<span th:unless="${product.averageRating > 0}">No reviews yet</span>
+				</span>
+				</div>
 			</div>
 		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Alias:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.alias}" readonly />
+
+		<!-- Description Tab -->
+		<div class="tab-pane" id="description" role="tabpanel">
+			<div class="p-2">
+				<p th:if="${product.fullDescription != null}" th:text="${product.fullDescription}"></p>
+				<p th:unless="${product.fullDescription != null}" class="text-muted">No description available.</p>
 			</div>
 		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Brand:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.brand.name}" readonly />
+
+		<!-- Images Tab -->
+		<div class="tab-pane" id="images" role="tabpanel">
+			<div class="p-2">
+				<img th:src="${product.mainImagePath}" class="img-fluid border rounded" alt="Main image" />
+				<div class="mt-2" th:if="${not #lists.isEmpty(product.images)}">
+					<h6>Extra Images:</h6>
+					<div class="d-flex flex-wrap gap-2">
+						<img th:each="img : ${product.images}"
+							 th:src="@{'/product-images/' + ${product.id} + '/extras/' + ${img.name}}"
+							 class="img-thumbnail" style="width: 100px; height: auto;" />
+					</div>
+				</div>
 			</div>
 		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Category:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.category.name}" readonly />
+
+		<!-- Details Tab -->
+		<div class="tab-pane" id="details" role="tabpanel">
+			<div class="p-2">
+				<table class="table table-sm" th:if="${not #lists.isEmpty(product.details)}">
+					<tbody>
+					<tr th:each="detail : ${product.details}">
+						<td><strong>[[${detail.name}]]</strong></td>
+						<td>[[${detail.value}]]</td>
+					</tr>
+					</tbody>
+				</table>
+				<p th:if="${#lists.isEmpty(product.details)}" class="text-muted">No details available.</p>
 			</div>
 		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Enabled:</label>
-			<div class="col-sm-10">
-				<input type="checkbox" th:checked="${product.enabled}" onclick="return false;" />
+
+		<!-- Shipping Tab -->
+		<div class="tab-pane" id="shipping" role="tabpanel">
+			<div class="p-2">
+				<p><strong>Weight:</strong> [[${product.weight}]] kg</p>
+				<p><strong>Dimensions:</strong>
+					[[${product.length}]] × [[${product.width}]] × [[${product.height}]] cm
+				</p>
 			</div>
 		</div>
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">In-Stock:</label>
-			<div class="col-sm-10">
-				<input type="checkbox" th:checked="${product.inStock}" onclick="return false;" />
-			</div>
-		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Cost:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.cost}" readonly />
-			</div>
-		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Price:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.price}" readonly />
-			</div>
-		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Discount:</label>
-			<div class="col-sm-10">
-				<input type="text" class="form-control" th:value="${product.discountPercent}" readonly />
-			</div>
-		</div>
-		
-		<div class="form-group row">
-			<label class="col-sm-2 col-form-label">Updated Time:</label>
-			<div class="col-sm-10">
-				<span th:text="${#dates.format(product.updatedTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
-			</div>
-		</div>			  	
-	  </div>
-	  <div class="tab-pane" id="description" role="tabpanel">
-		<div th:replace="products/product_description_read_only :: content"></div>	  
-	  </div>
-	  <div class="tab-pane" id="images" role="tabpanel">
-		<div th:replace="products/product_images_read_only :: content"></div>
-	  </div>
-	  <div class="tab-pane p-3" id="details" role="tabpanel">
-		<div th:replace="products/product_details_read_only :: content"></div>
-	  </div>
-	  <div class="tab-pane p-3" id="shipping" role="tabpanel">
-		<div th:replace="products/product_shipping_read_only :: content"></div>
-	  </div>
 	</div>
 </div>
 
 <div class="modal-footer">
-	<button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+	<div sec:authorize="hasAuthority('Customer')" th:if="${!reviewedByCustomer}">
+		<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal"
+				th:data-product-id="${product.id}" id="writeReviewBtn">
+			Write a Review
+		</button>
+	</div>
+	<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 </div>
+
+<script>
+	document.getElementById('writeReviewBtn').addEventListener('click', function() {
+		const productId = this.getAttribute('data-product-id');
+		document.getElementById('reviewProductId').value = productId;
+
+		// Reset form
+		document.getElementById('ratingInput').value = 5;
+		document.getElementById('ratingText').textContent = '5 stars';
+		document.querySelectorAll('.star').forEach(star => {
+			star.style.color = '#ffc107'; // all gold
+		});
+
+		// Clear fields
+		document.querySelector('[name="headline"]').value = '';
+		document.querySelector('[name="comment"]').value = '';
+	});
+</script>
+</body>
+</html>

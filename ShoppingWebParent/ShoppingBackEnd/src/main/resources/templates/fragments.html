@@ -11,8 +11,7 @@
 	<link rel="stylesheet" type="text/css" th:href="@{/style.css}" />
 	<script th:src="@{/webjars/jquery/jquery.min.js}"></script>
 	<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
-	<script type="text/javascript" th:src="@{/js/common.js}" ></script>
-</head>
+	<script th:src="@{/js/common_list.js}"></script></head>
 <body>
 
 <div th:fragment="footer" class="text-center m-3">
@@ -135,6 +134,54 @@
 		   th:value="${(CURRENCY_SYMBOL_POSITION == 'Before price' ? CURRENCY_SYMBOL : '') +
                    #numbers.formatDecimal(amount, 1, THOUSANDS_POINT_TYPE, DECIMAL_DIGITS, DECIMAL_POINT_TYPE) +
                    (CURRENCY_SYMBOL_POSITION == 'After price' ? CURRENCY_SYMBOL : '')}">
+</div>
+
+<!-- ============ REVIEW MODAL FRAGMENT (NO PARAMETERS) ============ -->
+<div th:fragment="review_modal">
+	<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form th:action="@{/reviews/submit}" method="post" id="reviewForm">
+					<input type="hidden" name="productId" id="reviewProductId" />
+
+					<div class="modal-header">
+						<h5 class="modal-title" id="reviewModalLabel">Write a Review</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label">Rating *</label>
+							<div class="rating-stars d-flex">
+								<span class="star me-1" data-value="1">&#9733;</span>
+								<span class="star me-1" data-value="2">&#9733;</span>
+								<span class="star me-1" data-value="3">&#9733;</span>
+								<span class="star me-1" data-value="4">&#9733;</span>
+								<span class="star me-1" data-value="5">&#9733;</span>
+								<input type="hidden" name="rating" id="ratingInput" value="5" required />
+								<span class="ms-2" id="ratingText">5 stars</span>
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label>Headline (optional)</label>
+							<input type="text" name="headline" class="form-control" maxlength="150" />
+						</div>
+
+						<div class="mb-3">
+							<label>Review *</label>
+							<textarea name="comment" class="form-control" rows="4" required></textarea>
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-success">Submit Review</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 </div>
 
 </body>

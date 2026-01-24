@@ -36,10 +36,22 @@ public class WebSecurityConfig {
         http.authenticationProvider(authProvider);
 
         http.authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login").permitAll()
+                        // PUBLIC PAGES (no login needed)
+                        .requestMatchers("/login", "/register", "/reviews/public").permitAll()
+
+                        // CUSTOMER-SUBMIT ENDPOINT (secured by controller logic)
+                        .requestMatchers("/reviews/submit").authenticated() // ← must be logged in
+
+                        // ADMIN-ONLY: manage reviews (edit/delete)
+                        .requestMatchers("/reviews/**").hasAuthority("Admin")
+
+                        // Admin + Editor: users, categories, etc.
                         .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
+
+                        // Everything else: any logged-in user (Customer, Salesperson, etc.)
                         .anyRequest().authenticated()
                 )
+
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("email")

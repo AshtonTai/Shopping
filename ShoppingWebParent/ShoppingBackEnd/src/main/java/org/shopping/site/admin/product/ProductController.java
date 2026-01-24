@@ -10,10 +10,12 @@ import org.shopping.site.admin.paging.PagingAndSortingHelper;
 import org.shopping.site.admin.paging.PagingAndSortingParam;
 import org.shopping.site.admin.product.strategy.ProductSaveContext;
 import org.shopping.site.admin.product.strategy.ProductSaveStrategy;
+import org.shopping.site.admin.review.ReviewService;
 import org.shopping.site.admin.security.ShoppingUserDetails;
 import org.shopping.site.admin.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,6 +34,8 @@ public class ProductController {
     private String defaultRedirectURL = "redirect:/products/page/1?sortField=name&sortDir=asc&categoryId=0";
     @Autowired
     private ProductService productService;
+    @Autowired
+    private ReviewService reviewService;
     @Autowired private BrandService brandService;
     @Autowired private CategoryService categoryService;
     @Autowired
@@ -201,16 +205,28 @@ public class ProductController {
 
     @GetMapping("/products/detail/{id}")
     public String viewProductDetails(@PathVariable("id") Integer id, Model model,
-                                     RedirectAttributes ra) {
+                                     RedirectAttributes ra,
+                                     Authentication authentication) {
         try {
             Product product = productService.get(id);
             model.addAttribute("product", product);
 
-            return "products/product_detail_modal";
+            // Check if current user has reviewed this product
+            boolean reviewedByCustomer = false;
+            if (authentication != null && authentication.isAuthenticated()) {
+                Object principal = authentication.getPrincipal();
+                if (principal instanceof ShoppingUserDetails userDetails) {
+                    if (userDetails.hasRole("Customer")) {
+                        reviewedByCustomer = reviewService.hasReviewedProduct(
+                                userDetails.getId(), id);
+                    }
+                }
+            }
+            model.addAttribute("reviewedByCustomer", reviewedByCustomer);
 
+            return "products/product_detail_modal";
         } catch (ProductNotFoundException e) {
             ra.addFlashAttribute("message", e.getMessage());
-
             return defaultRedirectURL;
         }
     }
