@@ -36,19 +36,29 @@ public class WebSecurityConfig {
         http.authenticationProvider(authProvider);
 
         http.authorizeHttpRequests(auth -> auth
-                        // PUBLIC PAGES (no login needed)
-                        .requestMatchers("/login", "/register", "/reviews/public").permitAll()
+                        // === PUBLIC (no login needed) ===
+                        .requestMatchers("/login", "/register").permitAll()
 
-                        // CUSTOMER-SUBMIT ENDPOINT (secured by controller logic)
-                        .requestMatchers("/reviews/submit").authenticated() // ← must be logged in
+                        // === CREATE/EDIT/DELETE — RESTRICTED ===
+                        .requestMatchers("/products/new", "/products/save", "/brands/new", "/brands/save")
+                        .hasAnyAuthority("Admin", "Editor")
 
-                        // ADMIN-ONLY: manage reviews (edit/delete)
+                        .requestMatchers("/products/edit/**", "/products/delete/**")
+                        .hasAnyAuthority("Admin", "Editor", "Salesperson") // ← allow Salesperson to edit?
+
+                        .requestMatchers("/brands/edit/**", "/brands/delete/**", "/brands/**")
+                        .hasAnyAuthority("Admin", "Editor")
+
+                        // === CUSTOMER-ONLY PAGES (logged-in Customers + others can view) ===
+                        .requestMatchers("/products/**", "/reviews/public").authenticated()
+
+                        // === ADMIN-ONLY: manage reviews (edit/delete) ===
                         .requestMatchers("/reviews/**").hasAuthority("Admin")
 
-                        // Admin + Editor: users, categories, etc.
+                        // === Other admin areas ===
                         .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
 
-                        // Everything else: any logged-in user (Customer, Salesperson, etc.)
+                        // === Default: any authenticated user can access remaining pages ===
                         .anyRequest().authenticated()
                 )
 
@@ -65,6 +75,15 @@ public class WebSecurityConfig {
                 .rememberMe(rm -> rm
                         .key("shopme-admin-secret-key")
                         .tokenValiditySeconds(86400)
+                )
+
+                // Handle access denied → show toast/error
+                .exceptionHandling(ex -> ex
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        // Redirect to home with error message
+                        request.getSession().setAttribute("error", "Access denied: Customers cannot access this page.");
+                        response.sendRedirect(request.getContextPath() + "/");
+                    })
                 );
 
         return http.build();
