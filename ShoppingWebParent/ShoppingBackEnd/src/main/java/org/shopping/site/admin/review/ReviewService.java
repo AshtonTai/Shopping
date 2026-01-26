@@ -31,6 +31,10 @@ public class ReviewService {
         return repo.findAll(pageable);
     }
 
+    public Page<Review> listAllPublic(Pageable pageable) {
+        return repo.findAll(pageable);
+    }
+
     public void save(Review review, ShoppingUserDetails loggedUser) {
         if (!loggedUser.hasRole("Customer")) {
             throw new IllegalStateException("Only customers can submit reviews.");
@@ -59,6 +63,25 @@ public class ReviewService {
             // If product doesn't exist, delete the orphaned review and rethrow
             repo.delete(savedReview);
             throw new IllegalStateException("Failed to update product ratings: " + e.getMessage(), e);
+        }
+    }
+
+    public void delete(Integer id, Integer currentUserId) {
+        Review review = repo.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException("Review not found with ID: " + id));
+
+        // 🔒 Enforce ownership
+        if (!review.getUser().getId().equals(currentUserId)) {
+            throw new SecurityException("You can only delete your own reviews.");
+        }
+
+        Integer productId = review.getProduct().getId();
+        repo.delete(review);
+
+        try {
+            productService.recalculateReviewStats(productId);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not update ratings for product ID " + productId + " after review deletion: " + e.getMessage());
         }
     }
 

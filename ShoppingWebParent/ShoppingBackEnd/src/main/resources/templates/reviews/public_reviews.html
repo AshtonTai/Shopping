@@ -16,13 +16,25 @@
         <div class="col-md-12 mb-3 p-3 border rounded">
             <div>
                 <strong>[[${review.product.name}]]</strong>
-                by <em>[[${review.user.fullName}]]</em>
+                by
+                <em>[[${review.user.fullName}]]</em>
+
+                <!-- Delete icon right after the user name -->
+                <span th:if="${currentUserId != null && review.user.id == currentUserId}">
+                &nbsp;
+                <a th:href="@{/reviews/public/delete/{id}(id=${review.id})}"
+                   class="text-danger"
+                   title="Delete your review"
+                   onclick="return confirm('Are you sure you want to delete your review?');">
+                    <i class="fas fa-trash-alt"></i>
+                </a>
+            </span>
             </div>
+
             <div class="text-warning">
-                <!-- Render stars -->
-                <span th:each="i : ${#numbers.sequence(1, 5)}">
-                    <i th:class="${i <= review.rating ? 'fas fa-star' : 'far fa-star'}"></i>
-                </span>
+            <span th:each="i : ${#numbers.sequence(1, 5)}">
+                <i th:class="${i <= review.rating ? 'fas fa-star' : 'far fa-star'}"></i>
+            </span>
                 ([[${review.rating}]])
             </div>
             <div><strong>[[${review.headline}]]</strong></div>

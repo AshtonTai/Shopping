@@ -36,32 +36,32 @@ public class WebSecurityConfig {
         http.authenticationProvider(authProvider);
 
         http.authorizeHttpRequests(auth -> auth
-                        // === PUBLIC (no login needed) ===
-                        .requestMatchers("/login", "/register").permitAll()
+                // === PUBLIC PAGES (no login needed) ===
+                .requestMatchers("/login", "/register").permitAll()
+                .requestMatchers("/products/detail/**", "/reviews/public").permitAll()
 
-                        // === CREATE/EDIT/DELETE — RESTRICTED ===
-                        .requestMatchers("/products/new", "/products/save", "/brands/new", "/brands/save")
-                        .hasAnyAuthority("Admin", "Editor")
+                // === CUSTOMER ACTIONS (logged-in users only) ===
+                .requestMatchers("/reviews/submit", "/reviews/delete/**").authenticated()
 
-                        .requestMatchers("/products/edit/**", "/products/delete/**")
-                        .hasAnyAuthority("Admin", "Editor", "Salesperson") // ← allow Salesperson to edit?
+                // === PRODUCT MANAGEMENT (restricted roles) ===
+                .requestMatchers("/products/new", "/products/save")
+                .hasAnyAuthority("Admin", "Editor")
+                .requestMatchers("/products/edit/**", "/products/delete/**")
+                .hasAnyAuthority("Admin", "Editor", "Salesperson")
 
-                        .requestMatchers("/brands/edit/**", "/brands/delete/**", "/brands/**")
-                        .hasAnyAuthority("Admin", "Editor")
+                // === BRANDS ===
+                .requestMatchers("/brands/**").hasAnyAuthority("Admin", "Editor")
 
-                        // === CUSTOMER-ONLY PAGES (logged-in Customers + others can view) ===
-                        .requestMatchers("/products/**", "/reviews/public").authenticated()
+                // === ADMIN-ONLY REVIEW MANAGEMENT ===
+                .requestMatchers("/reviews/", "/reviews/page/**", "/reviews/edit/**", "/reviews/detail/**")
+                .hasAuthority("Admin")
 
-                        // === ADMIN-ONLY: manage reviews (edit/delete) ===
-                        .requestMatchers("/reviews/**").hasAuthority("Admin")
+                // === OTHER ADMIN AREAS ===
+                .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
 
-                        // === Other admin areas ===
-                        .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
-
-                        // === Default: any authenticated user can access remaining pages ===
-                        .anyRequest().authenticated()
-                )
-
+                // === DEFAULT: any authenticated user can access remaining pages ===
+                .anyRequest().authenticated()
+        )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("email")

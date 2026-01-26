@@ -150,35 +150,10 @@
 
 <div th:replace="~{fragments :: review_modal}"></div>
 
-<script th:src="@{/js/common_list.js}"></script>
-<script type="text/javascript">
-	moduleURL = "[[@{/products}]]";
-
-	$(document).ready(function() {
-		// Delete confirmation
-		$(".link-delete").on("click", function(e) {
-			e.preventDefault();
-			showDeleteConfirmModal($(this), 'product');
-		});
-
-		// Product detail modal
-		$(".link-detail").on("click", function(e) {
-			e.preventDefault();
-			const linkDetailURL = $(this).attr("href");
-
-			// Load content into modal
-			$("#detailModal .modal-content").load(linkDetailURL, function() {
-				// Show modal AFTER content loads
-				const modal = new bootstrap.Modal(document.getElementById('detailModal'));
-				modal.show();
-			});
-		});
-
-		// Category filter
-		$("#dropdownCategory").on("change", function() {
-			$("#searchForm").submit();
-		});
-	});
+<script th:inline="javascript">
+	const moduleURL = /*[[ @{/products} ]]*/ '/products';
 </script>
+
+<script th:src="@{/js/common_list.js}"></script>
 </body>
 </html>

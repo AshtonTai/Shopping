@@ -204,30 +204,26 @@ public class ProductController {
     }
 
     @GetMapping("/products/detail/{id}")
-    public String viewProductDetails(@PathVariable("id") Integer id, Model model,
-                                     RedirectAttributes ra,
-                                     Authentication authentication) {
+    public String viewProductDetails(
+            @PathVariable("id") Integer id,
+            Model model,
+            @AuthenticationPrincipal ShoppingUserDetails loggedUser) { // ← Use this
+
         try {
             Product product = productService.get(id);
             model.addAttribute("product", product);
 
-            // Check if current user has reviewed this product
-            boolean reviewedByCustomer = false;
-            if (authentication != null && authentication.isAuthenticated()) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof ShoppingUserDetails userDetails) {
-                    if (userDetails.hasRole("Customer")) {
-                        reviewedByCustomer = reviewService.hasReviewedProduct(
-                                userDetails.getId(), id);
-                    }
-                }
+            boolean canReview = false;
+            if (loggedUser != null && loggedUser.hasRole("Customer")) {
+                canReview = !reviewService.hasReviewedProduct(loggedUser.getId(), id);
             }
-            model.addAttribute("reviewedByCustomer", reviewedByCustomer);
+            model.addAttribute("canReview", canReview); // ← Critical!
 
             return "products/product_detail_modal";
+
         } catch (ProductNotFoundException e) {
-            ra.addFlashAttribute("message", e.getMessage());
-            return defaultRedirectURL;
+            model.addAttribute("errorMessage", "Product not found.");
+            return "products/product_detail_modal";
         }
     }
 }

@@ -171,33 +171,17 @@
 		</div>
 	</div>
 </div>
-
 <div class="modal-footer">
-	<div sec:authorize="hasAuthority('Customer')" th:if="${!reviewedByCustomer}">
-		<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal"
-				th:data-product-id="${product.id}" id="writeReviewBtn">
+	<div th:if="${canReview}">
+		<button type="button"
+				class="btn btn-primary"
+				data-bs-toggle="modal"
+				data-bs-target="#reviewModal"
+				th:onclick="'document.getElementById(\'reviewProductId\').value = ' + ${product.id}">
 			Write a Review
 		</button>
 	</div>
 	<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 </div>
-
-<script>
-	document.getElementById('writeReviewBtn').addEventListener('click', function() {
-		const productId = this.getAttribute('data-product-id');
-		document.getElementById('reviewProductId').value = productId;
-
-		// Reset form
-		document.getElementById('ratingInput').value = 5;
-		document.getElementById('ratingText').textContent = '5 stars';
-		document.querySelectorAll('.star').forEach(star => {
-			star.style.color = '#ffc107'; // all gold
-		});
-
-		// Clear fields
-		document.querySelector('[name="headline"]').value = '';
-		document.querySelector('[name="comment"]').value = '';
-	});
-</script>
 </body>
 </html>

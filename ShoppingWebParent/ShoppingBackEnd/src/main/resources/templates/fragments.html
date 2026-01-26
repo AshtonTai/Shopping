@@ -136,12 +136,17 @@
                    (CURRENCY_SYMBOL_POSITION == 'After price' ? CURRENCY_SYMBOL : '')}">
 </div>
 
-<!-- ============ REVIEW MODAL FRAGMENT (NO PARAMETERS) ============ -->
+<!-- ============ REVIEW MODAL FRAGMENT ============ -->
 <div th:fragment="review_modal">
 	<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel">
 		<div class="modal-dialog">
 			<div class="modal-content">
 				<form th:action="@{/reviews/submit}" method="post" id="reviewForm">
+					<!-- 🔑 CSRF Token (REQUIRED for POST) -->
+					<input type="hidden"
+						   th:name="${_csrf.parameterName}"
+						   th:value="${_csrf.token}" />
+
 					<input type="hidden" name="productId" id="reviewProductId" />
 
 					<div class="modal-header">
