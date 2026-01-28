@@ -112,6 +112,27 @@ public class UserService {
         return (List<Role>) roleRepo.findAll();
     }
 
+    public boolean userHasRole(Integer userId, String roleName) {
+        User user = userRepo.findById(userId).orElse(null);
+        if (user == null) return false;
+
+        return user.getRoles().stream()
+                .anyMatch(role -> roleName.equalsIgnoreCase(role.getName()));
+    }
+
+    public boolean isCustomer(Integer userId) {
+        return userHasRole(userId, "Customer");
+    }
+
+    public boolean isShipper(Integer userId) {
+        return userHasRole(userId, "Shipper");
+    }
+
+    public boolean isAdminOrEditor(Integer userId) {
+        return userHasRole(userId, "Admin") || userHasRole(userId, "Editor");
+    }
+
+
     public User save(User user) {
         boolean isUpdatingUser = (user.getId() != null);
 

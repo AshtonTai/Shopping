@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments :: page_head('Reviews - Shopme Admin', 'none')" />
+<head th:replace="~{fragments :: page_head('Reviews - Shopme Admin', 'none')}" />
 <body>
 <div class="container-fluid">
-	<div th:replace="navigation :: menu"></div>
+	<div th:replace="~{navigation :: menu}"></div>
 	<div>
 		<h2>Manage Reviews</h2>
 	</div>
 
-	<div th:replace="fragments :: search_form_and_message" />
+	<div th:replace="~{fragments :: search_form_and_message}" />
 
 	<div class="full-details">
 		<table class="table table-bordered table-striped table-hover table-responsive-xl">
 			<thead class="table-dark text-dark">
 			<tr>
-				<th th:replace="fragments :: column_link('id', 'ID', 'none')" />
-				<th th:replace="fragments :: column_link('product', 'Product', 'none')" />
-				<th th:replace="fragments :: column_link('customer', 'Customer', 'none')" />
-				<th th:replace="fragments :: column_link('rating', 'Rating', 'none')" />
-				<th th:replace="fragments :: column_link('reviewTime', 'Review Time', 'none')" />
+				<th th:replace="~{fragments :: column_link('id', 'ID', 'none')}" />
+				<th th:replace="~{fragments :: column_link('product', 'Product', 'none')}" />
+				<th th:replace="~{fragments :: column_link('customer', 'Customer', 'none')}" />
+				<th th:replace="~{fragments :: column_link('rating', 'Rating', 'none')}" />
+				<th th:replace="~{fragments :: column_link('reviewTime', 'Review Time', 'none')}" />
 				<th></th>
 			</tr>
 			</thead>
@@ -26,26 +26,27 @@
 			<tr th:each="review : ${listReviews}">
 				<td>[[${review.id}]]</td>
 				<td>
-					<a th:href="@{'/products/detail/' + ${review.product.id}}" class="link-detail-product">
+					<a href="javascript:void(0)"
+					   class="link-detail-product"
+					   th:data-product-id="${review.product.id}"
+					   th:data-product-name="${review.product.name}"
+					   th:data-rating="${review.rating}"
+					   th:data-headline="${review.headline}"
+					   th:data-comment="${review.comment}"
+					   th:data-image-url="${review.product.mainImagePath}"
+					   onclick="event.preventDefault(); showProductReviewModal(this);">
 						[[${review.product.shortName}]]
 					</a>
 				</td>
 				<td>
-					<a th:href="@{'/customers/detail/' + ${review.user.id}}" class="link-detail-customer">
+					<a>
 						[[${review.user.fullName}]]
 					</a>
 				</td>
 				<td>[[${review.rating}]] <i class="far fa-star"></i></td>
 				<td>[[${#temporals.format(review.reviewTime, 'yyyy-MM-dd HH:mm')}]]</td>
 				<td>
-					<a class="fas fa-file-alt fa-2x icon-green link-detail-review"
-					   th:href="@{'/reviews/detail/' + ${review.id}}"
-					   title="View details of this review"
-					></a>
-					&nbsp;
-					<div th:replace="fragments :: edit('review', '/reviews/edit/' + ${review.id})" />
-					&nbsp;
-					<div th:replace="fragments :: delete('review', ${review.id}, '/reviews/delete/' + ${review.id}, true)" />
+					<div th:replace="~{fragments :: delete('review', ${review.id}, '/reviews/delete/' + ${review.id}, true)}" />
 				</td>
 			</tr>
 			</tbody>
@@ -64,24 +65,17 @@
 				<div>
 					&nbsp;
 					<span>[[${review.rating}]] <i class="far fa-star"></i></span>
-					&nbsp;
-					<a class="fas fa-file-alt fa-2x icon-green link-detail-review"
-					   th:href="@{'/reviews/detail/' + ${review.id}}"
-					   title="View details of this review"
-					></a>
-					&nbsp;
-					<div th:replace="fragments :: edit('review', '/reviews/edit/' + ${review.id})" />
-					&nbsp;
-					<div th:replace="fragments :: delete('review', ${review.id}, '/reviews/delete/' + ${review.id}, true)" />
+					&nbsp
+					<div th:replace="~{fragments :: delete('review', ${review.id}, '/reviews/delete/' + ${review.id}, true)}" />
 				</div>
 			</div>
 			<div>&nbsp;</div>
 		</div>
 	</div>
 
-	<div th:replace="fragments :: pagination('reviews')"></div>
+	<div th:replace="~{fragments :: pagination('reviews')}"></div>
 
-	<div th:replace="modal_fragments :: confirm_modal" />
+	<div th:replace="~{modal_fragments :: confirm_modal}" />
 
 	<div class="modal fade" id="xlargeModal">
 		<div class="modal-dialog modal-xl">
@@ -97,9 +91,17 @@
 		</div>
 	</div>
 
-	<div th:replace="fragments :: footer"></div>
+	<div class="modal fade" id="detailModal">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content"></div>
+		</div>
+	</div>
 
+	<div th:replace="~{fragments :: footer}"></div>
 </div>
+
+<div th:replace="~{modal_fragments :: product_review_modal}"></div>
+
 <script th:src="@{/js/common_list.js}"></script>
 <script type="text/javascript">
 	let moduleURL = "[[@{/reviews}]]";
@@ -136,6 +138,29 @@
 
 	function handleReviewDetailLink() {
 		handleDetailLinkClick(".link-detail-review", "#largeModal");
+	}
+
+	let currentProductId = null;
+
+	function showProductReviewModal(element) {
+		const id = element.getAttribute('data-product-id');
+		const name = element.getAttribute('data-product-name') || 'Unknown';
+		const rating = (parseFloat(element.getAttribute('data-rating')) || 0).toFixed(1);
+		const headline = element.getAttribute('data-headline') || 'No comment';
+		const comment = element.getAttribute('data-comment') || 'No comment';
+		const img = element.getAttribute('data-image-url') || '/images/default.png';
+
+		currentProductId = id; // store for goToProductDetail
+
+		// Populate modal
+		document.getElementById('modalProductImage').src = img;
+		document.getElementById('modalProductName').textContent = name;
+		document.getElementById('modalRating').textContent = rating;
+		document.getElementById('modalHeadline').textContent = headline;
+		document.getElementById('modalComment').textContent = comment;
+
+		// Show modal
+		new bootstrap.Modal(document.getElementById('productReviewModal')).show();
 	}
 </script>
 </body>

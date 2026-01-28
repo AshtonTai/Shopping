@@ -41,7 +41,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/products/detail/**", "/reviews/public").permitAll()
 
                 // === CUSTOMER ACTIONS (logged-in users only) ===
-                .requestMatchers("/reviews/submit", "/reviews/delete/**").authenticated()
+                .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**").authenticated()
 
                 // === PRODUCT MANAGEMENT (restricted roles) ===
                 .requestMatchers("/products/new", "/products/save")

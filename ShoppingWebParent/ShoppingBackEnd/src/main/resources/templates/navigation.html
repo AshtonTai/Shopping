@@ -110,20 +110,49 @@
 				<!--					</div>-->
 				<!--				</li>		-->
 
-				<li>
-					<span class="fas fa-user fa-2x icon-silver"></span>
-				</li>
-				<li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">
-						<span sec:authentication="principal.fullname"></span>
-					</a>
-					<div class="dropdown-menu">
-						<form th:action="@{/logout}" method="post" id="logoutForm" style="display:none;"></form>
-						<a class="dropdown-item" href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
-							Logout
+				<!-- ============ NEW: E-COMMERCE ACCOUNT DROPDOWN ============ -->
+				<th:block sec:authorize="isAuthenticated()">
+					<li class="nav-item dropdown">
+						<!-- Cart Icon with badge -->
+						<a class="nav-link position-relative" th:href="@{/cart}" style="padding-right: 0.5rem;">
+							<i class="fas fa-shopping-cart fa-lg"></i>
+							<!-- <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" th:text="${cartItemCount}">3</span> -->
 						</a>
-					</div>
-				</li>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle d-flex align-items-center"
+						   data-bs-toggle="dropdown" href="#" role="button">
+							<!-- Smaller user icon (same visual weight as cart) -->
+							<i class="fas fa-user fa-lg me-1"></i>
+							<span sec:authentication="principal.fullname"></span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<!-- Customer Features -->
+							<li sec:authorize="hasAuthority('Customer')">
+								<a class="dropdown-item" th:href="@{/cart}">
+									<i class="fas fa-shopping-cart me-2"></i> My Cart
+								</a>
+							</li>
+							<li sec:authorize="hasAuthority('Customer')">
+								<a class="dropdown-item" th:href="@{/orders}">
+									<i class="fas fa-box me-2"></i> My Orders
+								</a>
+							</li>
+							<li>
+								<a class="dropdown-item" th:href="@{/shipping-rates}">
+									<i class="fas fa-shipping-fast me-2"></i> Shipping Rates
+								</a>
+							</li>
+							<li><hr class="dropdown-divider"></li>
+							<li>
+								<form th:action="@{/logout}" method="post" id="logoutForm" style="display:none;"></form>
+								<a class="dropdown-item text-danger" href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
+									<i class="fas fa-sign-out-alt me-2"></i> Logout
+								</a>
+							</li>
+						</ul>
+					</li>
+				</th:block>
 			</ul>
 		</div>
 	</nav>

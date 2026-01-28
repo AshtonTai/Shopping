@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <div th:replace="navigation :: menu"></div>
+    <title>Order Successful</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-5 text-center">
+        <h2><i class="fas fa-check-circle text-success"></i> Order Placed Successfully!</h2>
+        <p>Your order number is: <strong th:text="${order.orderNumber}">ORD-XXXX</strong></p>
+        <p>Total Amount: <strong th:text="${#numbers.formatCurrency(order.totalAmount)}">$XX.XX</strong></p>
+        <p>Estimated delivery in 3-5 days.</p>
+
+        <div class="mt-4">
+            <a href="/orders" class="btn btn-primary">View My Orders</a>
+            <a href="/" class="btn btn-secondary">Continue Shopping</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

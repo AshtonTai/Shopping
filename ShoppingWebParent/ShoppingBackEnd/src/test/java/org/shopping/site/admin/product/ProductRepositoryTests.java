@@ -45,7 +45,7 @@ public class ProductRepositoryTests {
         product.setPrice(678);
         product.setCost(600);
         product.setEnabled(true);
-        product.setInStock(true);
+//        product.setInStock(200);
 
         product.setCreatedTime(new Date());
         product.setUpdatedTime(new Date());

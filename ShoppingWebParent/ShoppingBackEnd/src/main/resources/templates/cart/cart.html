@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Shopping Cart</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <div th:replace="navigation :: menu"></div>
+        <h2>Your Cart</h2>
+
+        <div th:if="${#lists.isEmpty(cartItems)}" class="alert alert-info">
+            Your cart is empty.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(cartItems)}">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${cartItems}">
+                    <td th:text="${item.product.name}">Product Name</td>
+                    <td th:text="${#numbers.formatCurrency(item.product.price)}">$10.00</td>
+                    <td th:text="${item.quantity}">1</td>
+                    <td th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">$10.00</td>
+                    <td>
+                        <form th:action="@{/cart/remove}" method="post" style="display:inline;">
+                            <input type="hidden" name="itemId" th:value="${item.id}" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between mt-3">
+                <form th:action="@{/cart/clear}" method="post">
+                    <button type="submit" class="btn btn-secondary">Clear Cart</button>
+                </form>
+                <a href="/checkout" class="btn btn-success">Proceed to Checkout</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

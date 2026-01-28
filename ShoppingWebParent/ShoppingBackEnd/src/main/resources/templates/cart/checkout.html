@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Checkout</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <div th:replace="navigation :: menu"></div>
+        <h2>Checkout</h2>
+
+        <form th:object="${orderRequest}" th:action="@{/checkout}" method="post">
+            <!-- Shipping Address -->
+            <div class="mb-4">
+                <h4>Shipping Address</h4>
+                <div th:if="${#lists.isEmpty(addresses)}" class="alert alert-warning">
+                    You have no saved addresses. Please add one in your profile.
+                </div>
+
+                <div th:unless="${#lists.isEmpty(addresses)}">
+                    <select th:field="*{addressId}" class="form-select" required>
+                        <option value="">Select an address</option>
+                        <option th:each="addr : ${addresses}"
+                                th:value="${addr.id}"
+                                th:text="${addr.fullName + ' - ' + addr.addressLine1 + ', ' + addr.city}">Address</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="mb-4">
+                <h4>Order Summary</h4>
+                <table class="table">
+                    <tr th:each="item : ${cartItems}">
+                        <td th:text="${item.product.name}">Product</td>
+                        <td th:text="${item.quantity}">Qty</td>
+                        <td th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">Total</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="mb-4">
+                <h4>Payment Method</h4>
+                <select th:field="*{paymentMethod}" class="form-select" required>
+                    <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
+                    <!-- Add more later -->
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Place Order</button>
+            <a href="/cart" class="btn btn-secondary">Back to Cart</a>
+        </form>
+    </div>
+</div>
+</body>
+</html>

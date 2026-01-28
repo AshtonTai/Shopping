@@ -44,6 +44,10 @@ public class User {
     @ToString.Exclude
     private Set<Role> roles = new HashSet<>();
 
+    public User(Integer id) {
+        this.id = id;
+    }
+
     public User(String email, String password, String firstName, String lastName) {
         this.email = email;
         this.password = password;

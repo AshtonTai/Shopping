@@ -1,5 +1,6 @@
 package org.shopping.site.admin.product;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.shopping.entity.Brand;
 import org.shopping.entity.Category;
 import org.shopping.entity.product.Product;
@@ -19,15 +20,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ProductController {
@@ -38,6 +39,10 @@ public class ProductController {
     private ReviewService reviewService;
     @Autowired private BrandService brandService;
     @Autowired private CategoryService categoryService;
+
+    @Autowired
+    ITemplateEngine templateEngine;
+
     @Autowired
     private List<ProductSaveStrategy> saveStrategies;
 
@@ -95,7 +100,7 @@ public class ProductController {
 
         Product product = new Product();
         product.setEnabled(true);
-        product.setInStock(true);
+        product.setInStock(200);
 
         model.addAttribute("product", product);
         model.addAttribute("listBrands", listBrands);
@@ -202,6 +207,7 @@ public class ProductController {
             return defaultRedirectURL;
         }
     }
+
 
     @GetMapping("/products/detail/{id}")
     public String viewProductDetails(
