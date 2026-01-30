@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: page_head('My Addresses - Shopme', 'none')}" />
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-map-marker-alt me-2"></i> My Addresses</h2>
+            <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addAddressForm">
+                <i class="fas fa-plus"></i> Add New Address
+            </button>
+        </div>
+
+        <!-- Address List -->
+        <div th:if="${#lists.isEmpty(addresses)}" class="alert alert-info">
+            <i class="fas fa-info-circle"></i> You haven't added any addresses yet.
+        </div>
+
+        <div class="row" th:unless="${#lists.isEmpty(addresses)}">
+            <div class="col-md-6 col-lg-4 mb-4" th:each="addr : ${addresses}">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <span th:text="${addr.fullName}">Name</span>
+                            <span th:if="${addr.isDefault}" class="badge bg-success ms-2">Default</span>
+                        </h6>
+                        <p class="card-text">
+                            <span th:text="${addr.addressLine1}">Addr1</span><br/>
+                            <span th:if="${addr.addressLine2}" th:text="${addr.addressLine2}">Addr2</span>
+                            <span th:text="${addr.city}">City</span>,
+                            <span th:text="${addr.state?.name ?: ''}">State</span>
+                            <span th:text="${addr.postalCode}">Postal</span><br/>
+                            <strong th:text="${addr.country.name}">Country</strong><br/>
+                            📞 <span th:text="${addr.phone}">Phone</span>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a th:href="@{/addresses/edit/{id}(id=${addr.id})}" class="btn btn-sm btn-outline-primary me-2">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <form th:action="@{/addresses/delete/{id}(id=${addr.id})}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete this address?')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Form (collapsible) -->
+        <div class="collapse" id="addAddressForm">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0" th:text="${addressForm.id == null ? 'Add New Address' : 'Edit Address'}">Form</h5>
+                </div>
+                <div class="card-body">
+                    <form th:object="${addressForm}" th:action="@{/addresses}" method="post">
+                        <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">
+                            <ul>
+                                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                            </ul>
+                        </div>
+
+                        <!-- Hidden ID for edit -->
+                        <input type="hidden" th:field="*{id}" />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" th:field="*{fullName}" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone *</label>
+                                <input type="text" class="form-control" th:field="*{phone}" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Address Line 1 *</label>
+                            <input type="text" class="form-control" th:field="*{addressLine1}" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" th:field="*{addressLine2}" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">City *</label>
+                                <input type="text" class="form-control" th:field="*{city}" required />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Postal Code *</label>
+                                <input type="text" class="form-control" th:field="*{postalCode}" required />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Country *</label>
+                                <select name="countryId" class="form-select" required onchange="loadStates(this.value)">
+                                    <option value="">Select Country</option>
+                                    <option th:each="c : ${countries}"
+                                            th:value="${c.id}"
+                                            th:text="${c.name}"
+                                            th:selected="${c.id == addressForm?.country?.id}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">State *</label>
+                            <select name="stateId" id="stateSelect" class="form-select" required>
+                                <option value="">Select State</option>
+                            </select>
+                        </div>
+
+                        <!-- Hidden fields for Thymeleaf binding -->
+                        <input type="hidden" name="country.id" th:value="${addressForm?.country?.id}" />
+                        <input type="hidden" name="state.id" th:value="${addressForm?.state?.id}" />
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" th:field="*{isDefault}" id="isDefault" />
+                            <label class="form-check-label" for="isDefault">Set as default shipping address</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Address
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addAddressForm">
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="flash-toast" class="toast align-items-center text-white border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="flash-message"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function loadStates(countryId) {
+        const stateSelect = document.getElementById('stateSelect');
+
+        const id = Number(countryId);
+        if (!id || id <= 0 || !Number.isInteger(id)) {
+            stateSelect.innerHTML = '<option value="">Select State</option>';
+            stateSelect.disabled = true;
+            return;
+        }
+
+        const baseUrl = /*[[@{/addresses/states/}]]*/ '/addresses/states/';
+        const url = baseUrl + encodeURIComponent(id);
+
+        stateSelect.disabled = false;
+        stateSelect.innerHTML = '<option value="">Loading...</option>';
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(states => {
+                let options = '<option value="">Select State</option>';
+                if (Array.isArray(states) && states.length > 0) {
+                    states.forEach(state => {
+                        const safeName = String(state.name).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        options += `<option value="${state.id}">${safeName}</option>`;
+                    });
+                } else {
+                    options = '<option value="">No states available</option>';
+                }
+                stateSelect.innerHTML = options;
+            })
+            .catch(error => {
+                console.error('Failed to load states for country ID:', id, error);
+                stateSelect.innerHTML = '<option value="">Error loading states</option>';
+            });
+    }
+
+    // Initialize states on page load (for edit mode)
+    document.addEventListener('DOMContentLoaded', function() {
+        const countrySelect = document.querySelector('[name="countryId"]');
+        if (countrySelect && countrySelect.value) {
+            loadStates(countrySelect.value);
+        }
+    });
+</script>
+<script th:inline="javascript">
+    // Show flash message as toast
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for success message
+        const successMsg = /*[[${message}]]*/ null;
+        if (successMsg) {
+            showToast(successMsg, 'success');
+        }
+
+        // Check for error message
+        const errorMsg = /*[[${error}]]*/ null;
+        if (errorMsg) {
+            showToast(errorMsg, 'error');
+        }
+    });
+
+    // Reusable showToast function (same as your cart)
+    function showToast(message, type = 'success') {
+        const toastElement = document.getElementById('flash-toast');
+        const toastBody = document.getElementById('flash-message');
+
+        if (!toastElement || !toastBody) return;
+
+        // Sanitize message
+        const safeMsg = String(message)
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        toastBody.innerHTML = safeMsg;
+        toastElement.className = `toast align-items-center text-white border-0 ${
+            type === 'success' ? 'bg-success' : 'bg-danger'
+        }`;
+
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 5000
+        });
+        toast.show();
+    }
+</script>
+</body>
+</html>

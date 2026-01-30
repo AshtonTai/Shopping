@@ -1,54 +1,173 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
-<head>
-    <title>Shopping Cart</title>
-</head>
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5  ">
+<head th:replace="~{fragments :: page_head('My Cart - Shopme Admin', 'none')}" />
 <body>
 <div th:fragment="content">
-    <div class="container mt-4">
+    <div class="container-fluid">
         <div th:replace="navigation :: menu"></div>
-        <h2>Your Cart</h2>
 
-        <div th:if="${#lists.isEmpty(cartItems)}" class="alert alert-info">
-            Your cart is empty.
-        </div>
+        <div class="container mt-4">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="text-primary">
+                    <i class="black fas fa-shopping-cart me-2"></i>My Shopping Cart
+                </h1>
+                <span class="badge bg-secondary fs-6 px-3 py-2"
+                      th:text="${#lists.size(cartItems)} + ' item(s)'">0 items</span>
+            </div>
 
-        <div th:unless="${#lists.isEmpty(cartItems)}">
-            <table class="table table-striped">
-                <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="item : ${cartItems}">
-                    <td th:text="${item.product.name}">Product Name</td>
-                    <td th:text="${#numbers.formatCurrency(item.product.price)}">$10.00</td>
-                    <td th:text="${item.quantity}">1</td>
-                    <td th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">$10.00</td>
-                    <td>
-                        <form th:action="@{/cart/remove}" method="post" style="display:inline;">
-                            <input type="hidden" name="itemId" th:value="${item.id}" />
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <!-- Empty Cart State -->
+            <div th:if="${#lists.isEmpty(cartItems)}">
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-shopping-cart text-muted" style="font-size: 8rem; opacity: 0.3;"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">Your cart is empty</h3>
+                    <p class="text-muted mb-4">Looks like you haven't added any items yet.</p>
+                    <a th:href="@{/products}" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-store me-2"></i>Start Shopping
+                    </a>
+                </div>
+            </div>
 
-            <div class="d-flex justify-content-between mt-3">
-                <form th:action="@{/cart/clear}" method="post">
-                    <button type="submit" class="btn btn-secondary">Clear Cart</button>
-                </form>
-                <a href="/checkout" class="btn btn-success">Proceed to Checkout</a>
+            <!-- Cart Items -->
+            <div th:unless="${#lists.isEmpty(cartItems)}">
+                <!-- Cart Items Table -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-box-open me-2"></i>Cart Items
+                        </h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40%;">Product</th>
+                                    <th class="text-center" style="width: 15%;">Price</th>
+                                    <th class="text-center" style="width: 15%;">Quantity</th>
+                                    <th class="text-end" style="width: 20%;">Subtotal</th>
+                                    <th class="text-center" style="width: 10%;">Remove</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${cartItems}" class="align-middle">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img th:src="@{${item.product.mainImagePath}}"
+                                                 class="rounded"
+                                                 style="width: 80px; height: 80px; object-fit: cover;"
+                                                 onerror="this.src='/images/default-product.png'"
+                                                 alt="Product Image" />
+                                            <div class="ms-3">
+                                                <h6 class="mb-1 fw-bold" th:text="${item.product.name}">Product Name</h6>
+                                                <small class="text-muted d-block">
+                                                    Brand: <span th:text="${item.product.brand.name}">Brand</span>
+                                                </small>
+                                                <small class="text-muted">
+                                                    Category: <span th:text="${item.product.category.name}">Category</span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold text-success"
+                                        th:text="${#numbers.formatCurrency(item.product.price)}">
+                                        $10.00
+                                    </td>
+                                    <td class="text-center">
+                                            <span class="badge text-dark fs-6 px-3 py-2"
+                                                  th:text="${item.quantity}">
+                                                1
+                                            </span>
+                                    </td>
+                                    <td class="text-end fw-bold text-primary fs-5"
+                                        th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">
+                                        $10.00
+                                    </td>
+                                    <td class="text-center">
+                                        <form th:action="@{/cart/remove}" method="post" class="d-inline">
+                                            <input type="hidden" name="itemId" th:value="${item.id}" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    title="Remove item"
+                                                    onclick="return confirm('Remove this item from cart?')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cart Summary Card -->
+                <div class="row">
+                    <div class="col-lg-8 mb-4">
+                        <!-- Actions -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <form th:action="@{/cart/clear}" method="post" class="d-inline">
+                                        <button type="submit"
+                                                class="btn btn-danger"
+                                                onclick="return confirm('Clear entire cart?')">
+                                            <i class="fas fa-trash me-2"></i>Clear Cart
+                                        </button>
+                                    </form>
+                                    <a th:href="@{/products}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <!-- Order Summary -->
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-receipt me-2"></i>Order Summary
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="text-muted">Subtotal (<span th:text="${#lists.size(cartItems)}">0</span> items):</span>
+                                    <span class="fw-bold fs-5"
+                                          th:text="${#numbers.formatCurrency(cartTotal)}">
+                                        $0.00
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="text-muted">Shipping:</span>
+                                    <span class="text-muted">Calculated at checkout</span>
+                                </div>
+                                <hr class="my-3">
+                                <div class="d-flex justify-content-between mb-4">
+                                    <span class="fs-4 fw-bold">Total:</span>
+                                    <span class="fs-4 fw-bold text-success"
+                                          th:text="${#numbers.formatCurrency(cartTotal)}">
+                                        $0.00
+                                    </span>
+                                </div>
+                                <a th:href="@{/checkout}" class="btn btn-success btn-lg w-100 mb-2">
+                                    <i class="fas fa-check-circle me-2"></i>Proceed to Checkout
+                                </a>
+                                <small class="text-muted d-block text-center">
+                                    <i class="fas fa-lock me-1"></i>Secure checkout
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <div th:replace="~{fragments :: footer}"></div>
     </div>
 </div>
 </body>

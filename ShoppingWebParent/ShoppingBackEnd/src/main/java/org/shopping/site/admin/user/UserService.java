@@ -34,6 +34,7 @@ public class UserService {
 
     @Transactional
     public void registerCustomer(User user) {
+
         // 1. Email uniqueness
         if (userRepo.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("There is already an account with this email: " + user.getEmail());
@@ -67,6 +68,11 @@ public class UserService {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    public User findById(Integer id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + id));
     }
 
     public User getByEmail(String email) {

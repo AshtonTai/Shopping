@@ -39,15 +39,16 @@ public class WebSecurityConfig {
                 // === PUBLIC PAGES (no login needed) ===
                 .requestMatchers("/login", "/register").permitAll()
                 .requestMatchers("/products/detail/**", "/reviews/public").permitAll()
+                .requestMatchers("/addresses/states/**").permitAll()
 
                 // === CUSTOMER ACTIONS (logged-in users only) ===
-                .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**").authenticated()
+                .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**", "/addresses/**").authenticated()
 
                 // === PRODUCT MANAGEMENT (restricted roles) ===
                 .requestMatchers("/products/new", "/products/save")
                 .hasAnyAuthority("Admin", "Editor")
                 .requestMatchers("/products/edit/**", "/products/delete/**")
-                .hasAnyAuthority("Admin", "Editor", "Salesperson")
+                .hasAnyAuthority("Admin", "Editor", "Shipper")
 
                 // === BRANDS ===
                 .requestMatchers("/brands/**").hasAnyAuthority("Admin", "Editor")

@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 public class CartController extends BaseController {
@@ -32,7 +33,7 @@ public class CartController extends BaseController {
 
         if (!userService.isCustomer(userId)) {
             redirectAttributes.addFlashAttribute("error", "Only customers can add to cart.");
-            return "redirect:/products/" + productId;
+            return "redirect:/products";
         }
 
         try {
@@ -41,32 +42,36 @@ public class CartController extends BaseController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/products/" + productId;
+        return "redirect:/products";
     }
 
     // View cart
     @GetMapping("/cart")
     public String viewCart(Model model, Authentication auth) {
         Integer userId = getCurrentUserId(auth);
-        if (!userService.isCustomer(userId)) {
-            return "redirect:/";
-        }
 
         List<CartItem> cartItems = cartService.getCartItems(userId);
+        if (cartItems == null) {
+            cartItems = List.of(); // or new ArrayList<>()
+        }
 
-        // Calculate total
+        int totalQuantity = cartItems.stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+
         BigDecimal total = cartItems.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getProduct() != null)
                 .map(item -> {
-                    // Convert float price to BigDecimal safely
                     BigDecimal price = BigDecimal.valueOf(item.getProduct().getPrice());
                     return price.multiply(BigDecimal.valueOf(item.getQuantity()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-
         model.addAttribute("cartItems", cartItems);
         model.addAttribute("cartTotal", total);
-        return "cart";
+        model.addAttribute("totalQuantity", totalQuantity);
+        return "cart/cart";
     }
 
     // Remove item from cart
@@ -75,7 +80,7 @@ public class CartController extends BaseController {
                                  Authentication auth,
                                  RedirectAttributes redirectAttributes) {
         Integer userId = getCurrentUserId(auth);
-        // Optional: verify item belongs to user
+
         cartService.removeFromCart(itemId);
         redirectAttributes.addFlashAttribute("success", "Item removed.");
         return "redirect:/cart";

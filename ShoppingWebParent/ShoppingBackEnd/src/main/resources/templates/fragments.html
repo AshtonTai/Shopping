@@ -136,7 +136,28 @@
                    (CURRENCY_SYMBOL_POSITION == 'After price' ? CURRENCY_SYMBOL : '')}">
 </div>
 
-<!-- ============ REVIEW MODAL FRAGMENT ============ -->
+<!-- Custom "Go to Checkout?" Modal -->
+<th:block th:fragment="buyNowModal">
+	<div class="modal fade" id="buyNowModal" tabindex="-1" aria-labelledby="buyNowModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="buyNowModalLabel">Proceed to Checkout?</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					This item will be added to your cart and you'll be taken directly to checkout.
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-success" id="confirmBuyNowBtn">Go to Checkout</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</th:block>
+
+<!-- Review Modal-->
 <div th:fragment="review_modal">
 	<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel">
 		<div class="modal-dialog">

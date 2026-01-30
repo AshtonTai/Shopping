@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: page_head('Order Confirmed - Shopme', 'none')}" />
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-5">
+        <div class="text-center">
+            <div class="mb-4">
+                <i class="fas fa-check-circle text-success" style="font-size: 6rem;"></i>
+            </div>
+            <h2>✅ Order Placed Successfully!</h2>
+            <p class="lead">Your order #<span th:text="${order.id}">123</span> has been confirmed.</p>
+
+            <div class="mt-4 p-3 bg-light rounded">
+                <h5>Order Summary</h5>
+                <p>Total: <strong th:text="${#numbers.formatCurrency(order.total)}">$0.00</strong></p>
+                <p>Shipping to: <strong th:text="${order.address.fullName}">Name</strong></p>
+            </div>
+
+            <div class="mt-4">
+                <a th:href="@{/orders}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-box"></i> View All Orders
+                </a>
+                <a th:href="@{/products}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-shopping-cart"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>

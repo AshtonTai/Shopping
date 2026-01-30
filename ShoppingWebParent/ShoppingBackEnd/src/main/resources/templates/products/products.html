@@ -99,7 +99,7 @@
 					</div>
 
 					<!-- Staff actions -->
-					<div sec:authorize="hasAnyAuthority('Admin','Editor','Salesperson')">
+					<div sec:authorize="hasAnyAuthority('Admin','Editor','Shipper')">
 						<!-- Edit for all staff -->
 						<a class="fas fa-edit fa-lg text-warning me-2"
 						   th:href="@{/products/edit/{id}(id=${product.id})}"
@@ -145,7 +145,7 @@
 					</div>
 
 					<!-- Staff actions -->
-					<div sec:authorize="hasAnyAuthority('Admin','Editor','Salesperson')">
+					<div sec:authorize="hasAnyAuthority('Admin','Editor','Shipper')">
 						<div th:replace="~{fragments :: edit('product', '/products/edit/' + ${product.id})}" />
 					</div>
 
@@ -173,6 +173,8 @@
 
 </div>
 
+<div th:replace="~{fragments :: buyNowModal}"></div>
+
 <div th:replace="~{fragments :: review_modal}"></div>
 
 <script th:inline="javascript">
@@ -182,6 +184,25 @@
 <script th:src="@{/js/common_list.js}"></script>
 
 <script th:inline="javascript">
+	// ===== GLOBAL HELPER =====
+	function showToast(message, type = 'success') {
+		const toastElement = document.getElementById('cart-toast');
+		const toastBody = document.getElementById('toast-message');
+		if (!toastElement || !toastBody) return;
+
+		toastBody.textContent = message;
+		toastElement.className = `toast align-items-center text-white border-0 ${
+				type === 'success' ? 'bg-success' : 'bg-danger'
+		}`;
+
+		const toast = new bootstrap.Toast(toastElement, {
+			autohide: true,
+			delay: 3000
+		});
+		toast.show();
+	}
+
+	// ===== GLOBAL FUNCTION: MUST BE ACCESSIBLE FROM HTML onclick =====
 	function addToCart(productId, redirectAfter = false) {
 		const body = document.body;
 		const cartAddUrl = body.getAttribute('data-cart-add-url');
@@ -206,24 +227,29 @@
 						if (redirectAfter) {
 							window.location.href = checkoutUrl;
 						} else {
-							alert('✅ Item added to cart!');
+							showToast('✅ Item added to cart!', 'success');
 						}
 					} else {
 						return response.text().then(text => {
-							throw new Error(text || 'Failed to add to cart');
+							throw new Error(text.trim() || 'Failed to add to cart');
 						});
 					}
 				})
 				.catch(error => {
 					console.error('Cart error:', error);
-					alert('❌ ' + (error.message || 'Could not add to cart. Please try again.'));
+					const safeMsg = (error.message || 'Could not add to cart. Please try again.')
+							.replace(/</g, '&lt;')
+							.replace(/>/g, '&gt;');
+					showToast(`❌ ${safeMsg}`, 'error');
 				});
 	}
 
+	// ===== Other global functions (already correct) =====
 	function buyNow(productId) {
-		if (confirm('Add this item to cart and go to checkout?')) {
-			addToCart(productId, true);
-		}
+		const modalEl = document.getElementById('buyNowModal');
+		modalEl.dataset.productId = productId;
+		const modal = new bootstrap.Modal(modalEl);
+		modal.show();
 	}
 
 	function confirmDeleteFromData(element) {
@@ -232,13 +258,38 @@
 		document.getElementById('confirmText').innerText =
 				'Are you sure you want to delete product "' + productName + '"?';
 
-		document.getElementById('yesButton').onclick = function() {
+		document.getElementById('yesButton').onclick = function () {
 			window.location.href = /*[[@{/products/delete/}]]*/ + productId;
 		};
 
 		const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
 		modal.show();
 	}
+
+	// ===== DOM-READY INIT (only for non-global logic) =====
+	document.addEventListener('DOMContentLoaded', function () {
+		// Attach "Go to Checkout" button listener (uses global addToCart)
+		const confirmBtn = document.getElementById('confirmBuyNowBtn');
+		if (confirmBtn) {
+			confirmBtn.addEventListener('click', function () {
+				const modalEl = document.getElementById('buyNowModal');
+				const productId = modalEl.dataset.productId;
+				if (productId) {
+					addToCart(productId, true); // ✅ Now calls global function
+					const modal = bootstrap.Modal.getInstance(modalEl);
+					if (modal) modal.hide();
+				}
+			});
+		}
+	});
 </script>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+	<div id="cart-toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+		<div class="d-flex">
+			<div class="toast-body" id="toast-message"></div>
+			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+		</div>
+	</div>
+</div>
 </body>
 </html>

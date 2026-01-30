@@ -27,6 +27,11 @@ public class OrderService {
     @Autowired private AddressRepository addressRepo;
     @Autowired private ShippingRateRepository shippingRateRepo;
 
+    public Order findById(Integer id) {
+        return orderRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + id));
+    }
+
     public Order createOrder(Integer customerId, Integer addressId, String paymentMethod, List<CartItem> cartItems) {
         Address address = addressRepo.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found"));

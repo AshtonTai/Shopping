@@ -12,9 +12,9 @@ public class ShippingRateController {
     @Autowired
     private ShippingRateRepository shippingRateRepo;
 
-    @GetMapping("/shipping-rates")
+    @GetMapping("/shipping_rates")
     public String shippingRates(Model model) {
         model.addAttribute("rates", shippingRateRepo.findAll());
-        return "shipping-rates"; // matches your shipping_rate.html
+        return "shipping_rates/shipping_rates";
     }
 }

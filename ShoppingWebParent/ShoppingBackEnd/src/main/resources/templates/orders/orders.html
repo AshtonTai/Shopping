@@ -1,151 +1,122 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments :: page_head('Orders - Shopme Admin', 'none')" />
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: page_head('My Orders - Shopme', 'none')}" />
 <body>
 <div class="container-fluid">
-	<div th:replace="navigation :: menu"></div>
-	<div>
-		<h2>Manage Orders</h2>	
-	</div>
-		
-	<div th:replace="fragments :: search_form_and_message" />
-	
-	<div class="full-details">
-		<table class="table table-bordered table-striped table-hover table-responsive-xl">
-			<thead class="thead-dark">
-				<tr>
-					<th th:replace="fragments :: column_link('id', 'ID', 'none')" />
-					<th th:replace="fragments :: column_link('customer', 'Customer', 'none')" />
-					<th th:replace="fragments :: column_link('total', 'Total', 'none')" />
-					<th th:replace="fragments :: column_link('orderTime', 'Order Time', 'none')" />
-					
-					<th class="hideable-column">
-					<th th:replace="fragments :: column_link('destination', 'Destination', 'tag')" />
-					</th>
-					
-					<th class="hideable-column">
-					<th th:replace="fragments :: column_link('paymentMethod', 'Payment Method', 'tag')" />
-					</th>
-					
-					<th class="hideable-column">
-					<th th:replace="fragments :: column_link('status', 'Status', 'tag')" />
-					</th>
-					
-					<th></th>
-				</tr>								
-			</thead>
-			<tbody>
-				<tr th:each="order : ${listOrders}">
-					<td>[[${order.id}]]</td>
-					<td>
-						<a class="linkCustomerDetail" th:href="@{'/customers/detail/' + ${order.customer.id}}">
-						[[${order.customer.fullName}]]
-						</a>
-					</td>
-					<td>
-						<div th:replace="fragments :: format_currency(${order.total})"></div>
-					</td>
-					<td>
-						<div th:replace="fragments :: format_time(${order.orderTime})"></div>
-					</td>
-					<td class="hideable-column">[[${order.destination}]]</td>
-					<td class="hideable-column">[[${order.paymentMethod}]]</td>
-					<td class="hideable-column">[[${order.status}]]</td>
+	<div th:replace="~{navigation :: menu}"></div>
 
-					<td>
-						<a class="fas fa-file-alt fa-2x icon-green linkOrderDetail"
-							th:href="@{'/orders/detail/' + ${order.id}}"
-							title="View details of this order"
-							></a>					
-						&nbsp; 
-						<div th:replace="fragments :: edit('order', '/orders/edit/' + ${order.id})" />
-						&nbsp; 
-						<div th:replace="fragments :: delete('order', ${order.id}, '/orders/delete/' + ${order.id}, true)" />						
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-	
-	<div class="less-details">
-		<th:block th:each="order : ${listOrders}">
-		<div class="row m-1">
-			<div class="col-2">
-				[[${order.id}]]
-			</div>
-			<div class="col-10">
-				<div>[[${order.customer.fullName}]], [[${order.country}]]</div>
-				<div><small>[[${order.orderTime}]] - [[${order.status}]]</small></div>
-				<div><div th:replace="fragments :: format_currency(${order.total})">Total</div> - [[${order.paymentMethod}]]</div>
-				<div>
-					<a class="fas fa-file-alt fa-2x icon-green linkOrderDetail"
-						th:href="@{'/orders/detail/' + ${order.id}}"
-						title="View details of this order"
-						></a>					
-					&nbsp; 
-					<div th:replace="fragments :: edit('order', '/orders/edit/' + ${order.id})" />
-					&nbsp; 
-					<div th:replace="fragments :: delete('order', ${order.id}, '/orders/delete/' + ${order.id}, true)" />				
+	<div class="container mt-4">
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<h2><i class="fas fa-box me-2"></i> My Orders</h2>
+			<!-- Add filter/search if needed -->
+		</div>
+
+		<!-- Flash messages -->
+		<div th:if="${message}" class="alert alert-success">
+			<i class="fas fa-check-circle"></i> <span th:text="${message}">Success</span>
+		</div>
+		<div th:if="${error}" class="alert alert-danger">
+			<i class="fas fa-exclamation-triangle"></i> <span th:text="${error}">Error</span>
+		</div>
+
+		<!-- Orders List -->
+		<div th:if="${#lists.isEmpty(listOrders)}" class="text-center py-5">
+			<i class="fas fa-box-open text-muted" style="font-size: 4rem;"></i>
+			<h4 class="mt-3">No orders yet</h4>
+			<p class="text-muted">Your orders will appear here once you place them.</p>
+			<a th:href="@{/products}" class="btn btn-primary">Start Shopping</a>
+		</div>
+
+		<div class="row" th:unless="${#lists.isEmpty(listOrders)}">
+			<div class="col-12">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle">
+						<thead class="table-light">
+						<tr>
+							<th>Order #</th>
+							<th>Date</th>
+							<th>Items</th>
+							<th>Total</th>
+							<th>Status</th>
+							<th>Actions</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr th:each="order : ${listOrders}">
+							<td>
+								<a th:href="@{'/orders/detail/' + ${order.id}}"
+								   class="text-decoration-none fw-bold text-primary">
+									#[[${order.id}]]
+								</a>
+							</td>
+							<td>
+								<div th:replace="~{fragments :: format_time(${order.orderTime})}"></div>
+							</td>
+							<td>
+								<span class="badge bg-secondary" th:text="${order.orderItems.size()} + ' items'">3 items</span>
+							</td>
+							<td>
+								<div th:replace="~{fragments :: format_currency(${order.total})}"></div>
+							</td>
+							<td>
+                                    <span class="badge"
+										  th:classappend="${order.status == 'PAID' ? 'bg-success' :
+                                                         order.status == 'PROCESSING' ? 'bg-warning' :
+                                                         order.status == 'SHIPPED' ? 'bg-info' : 'bg-secondary'}"
+										  th:text="${order.status}">
+                                        Status
+                                    </span>
+							</td>
+							<td>
+								<a th:href="@{'/orders/detail/' + ${order.id}}"
+								   class="btn btn-sm btn-outline-primary me-2"
+								   title="View details">
+									<i class="fas fa-eye"></i>
+								</a>
+								<!-- Add cancel/reorder buttons if needed -->
+							</td>
+						</tr>
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
-		<div>&nbsp;</div>
-		</th:block>
-	</div>	
-	
-	<div th:replace="fragments :: pagination('orders')"></div>
-	
-	<div th:replace="modal_fragments :: confirm_modal"></div>
-	
-	<div class="modal fade" id="customerDetailModal">
-		<div class="modal-dialog modal-lg">
-			<div class="modal-content">
-			</div>
-		</div>
+
+		<!-- Pagination -->
+		<div th:if="${!#lists.isEmpty(listOrders)}" th:replace="~{fragments :: pagination('orders')}"></div>
 	</div>
 
-	<div class="modal fade" id="orderDetailModal">
-		<div class="modal-dialog modal-xl">
-			<div class="modal-content">
-			</div>
-		</div>
-	</div>
-		
-	<div th:replace="fragments :: footer"></div>
-	
+	<div th:replace="~{fragments :: footer}"></div>
 </div>
-<script th:src="@{/js/common_list.js}"></script>
-<script type="text/javascript">
-	moduleURL = "[[@{/orders}]]";
 
-	$(document).ready(function() {
-		handleLinkViewCustomerDetails();
-		handleLinkViewOrderDetails();
-		handleLinkDeleteOrder();		
+<!-- Modals -->
+<div th:replace="~{modal_fragments :: confirm_modal}"></div>
+<div class="modal fade" id="orderDetailModal">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content"></div>
+	</div>
+</div>
+
+<script th:src="@{/js/common_list.js}"></script>
+<script th:inline="javascript">
+	const moduleURL = /*[[ @{/orders} ]]*/ '/orders';
+
+	document.addEventListener('DOMContentLoaded', function() {
+		// Handle order detail modal
+		document.querySelectorAll('.btn-outline-primary').forEach(btn => {
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				const url = this.getAttribute('href');
+				fetch(url)
+						.then(response => response.text())
+						.then(html => {
+							document.querySelector('#orderDetailModal .modal-content').innerHTML = html;
+							new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
+						});
+			});
+		});
 	});
-	
-	function handleLinkDeleteOrder() {
-		$(".link-delete").on("click", function(e) {
-			e.preventDefault();
-			showDeleteConfirmModal($(this), 'order');
-		});		
-	}
-	
-	function handleLinkViewCustomerDetails() {
-		$(".linkCustomerDetail").on("click", function(e) {
-			e.preventDefault();
-			linkDetailURL = $(this).attr("href");
-			$("#customerDetailModal").modal("show").find(".modal-content").load(linkDetailURL);
-		});			
-	}
-	
-	function handleLinkViewOrderDetails() {
-		$(".linkOrderDetail").on("click", function(e) {
-			e.preventDefault();
-			linkDetailURL = $(this).attr("href");
-			$("#orderDetailModal").modal("show").find(".modal-content").load(linkDetailURL);
-		});		
-	}
 </script>
 </body>
 </html>

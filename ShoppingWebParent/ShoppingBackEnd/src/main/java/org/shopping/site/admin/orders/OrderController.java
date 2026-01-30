@@ -53,7 +53,7 @@ public class OrderController extends BaseController {
             return "redirect:/";
         }
         model.addAttribute("orders", orderRepo.findByCustomer_Id(userId));
-        return "orders";
+        return "orders/orders";
     }
 
     // Admin/Shipper/Editor: view all orders
