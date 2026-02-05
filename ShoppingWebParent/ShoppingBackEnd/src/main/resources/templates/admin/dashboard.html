@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:replace="~{fragments :: page_head('Admin Dashboard - Shopme', 'none')}" />
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-chart-line me-2"></i> Admin Dashboard</h2>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-calendar me-1"></i>
+                    <span th:text="${#temporals.format(selectedDate, 'dd MMM yyyy')}">Today</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" th:href="@{/admin}">Today</a></li>
+                    <li><a class="dropdown-item" th:href="@{/admin?date=__${#temporals.format(yesterday, 'yyyy-MM-dd')}__}">Yesterday</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form th:action="@{/admin}" method="get" class="px-3 py-2">
+                            <div class="input-group">
+                                <input type="date" name="date" class="form-control form-control-sm"
+                                       th:value="${#temporals.format(selectedDate, 'yyyy-MM-dd')}" />
+                                <button type="submit" class="btn btn-sm btn-primary">Go</button>
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Orders</h5>
+                        <h2 class="mb-0" th:text="${#lists.size(todaysOrders)}">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Revenue</h5>
+                        <h2 class="mb-0" th:text="${#numbers.formatCurrency(totalRevenue)}">$0.00</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">Pending</h5>
+                        <h2 class="mb-0" th:text="${pendingCount}">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title">Delivered</h5>
+                        <h2 class="mb-0" th:text="${deliveredCount}">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">📊 Orders for <span th:text="${#temporals.format(selectedDate, 'dd MMM yyyy')}">Today</span></h4>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(todaysOrders)}" class="alert alert-info">
+                    No orders found for this date.
+                </div>
+
+                <div class="table-responsive" th:unless="${#lists.isEmpty(todaysOrders)}">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Time</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="order : ${todaysOrders}">
+                            <td>
+                                <a th:href="@{/admin/order/{id}(id=${order.id})}"
+                                   class="text-decoration-none fw-bold text-primary"
+                                   th:text="${order.orderNumber}">ORD-123</a>
+                            </td>
+                            <td th:text="${order.customer.email}">customer@email.com</td>
+                            <td th:text="${#temporals.format(order.orderTime, 'HH:mm')}">14:30</td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${order.orderDetails.size()} + ' items'">3 items</span>
+                            </td>
+                            <td th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</td>
+                            <td>
+                                    <span class="badge"
+                                          th:classappend="${order.status == 'DELIVERED' ? 'bg-success' :
+                                                         order.status == 'SHIPPED' ? 'bg-info' :
+                                                         order.status == 'CONFIRMED' ? 'bg-warning' : 'bg-secondary'}"
+                                          th:text="${order.status}">PENDING</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/admin/order/{id}(id=${order.id})}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>

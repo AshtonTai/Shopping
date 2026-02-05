@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:replace="~{fragments :: page_head('Countries - Admin', 'none')}"></head>
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>🌍 Countries</h2>
+            <a th:href="@{/admin/countries/new}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Country
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(countries)}" class="alert alert-info">
+            No countries configured yet.
+        </div>
+
+        <table class="table table-hover" th:unless="${#lists.isEmpty(countries)}">
+            <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${countries}">
+                <td th:text="${c.id}">1</td>
+                <td th:text="${c.name}">Singapore</td>
+                <td th:text="${c.code}">SG</td>
+                <td>
+                    <a th:href="@{/admin/countries/edit/{id}(id=${c.id})}"
+                       class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <form th:action="@{/admin/countries/delete/{id}(id=${c.id})}"
+                          method="post" style="display:inline;"
+                          onsubmit="return confirm('Delete country? All associated states and shipping rates will be affected!')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>

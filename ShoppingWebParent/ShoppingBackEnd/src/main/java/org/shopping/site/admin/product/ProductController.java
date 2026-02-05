@@ -1,6 +1,5 @@
 package org.shopping.site.admin.product;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.shopping.entity.Brand;
 import org.shopping.entity.Category;
 import org.shopping.entity.product.Product;
@@ -16,7 +15,6 @@ import org.shopping.site.admin.security.ShoppingUserDetails;
 import org.shopping.site.admin.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,7 +23,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.thymeleaf.ITemplateEngine;
-import org.thymeleaf.context.Context;
+
 
 import java.util.List;
 import java.util.Map;

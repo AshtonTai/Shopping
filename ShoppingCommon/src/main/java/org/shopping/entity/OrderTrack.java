@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "order_track")
+@Table(name = "order_tracks")
 @Data
 @NoArgsConstructor
 public class OrderTrack {
@@ -21,11 +21,6 @@ public class OrderTrack {
     private Order order;
 
     private String status;
-    private String note;
-
-    @ManyToOne
-    @JoinColumn(name = "updated_by")
-    private User updatedBy;
 
     @CreationTimestamp
     private LocalDateTime updatedTime;

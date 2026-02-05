@@ -36,33 +36,40 @@ public class WebSecurityConfig {
         http.authenticationProvider(authProvider);
 
         http.authorizeHttpRequests(auth -> auth
-                // === PUBLIC PAGES (no login needed) ===
-                .requestMatchers("/login", "/register").permitAll()
-                .requestMatchers("/products/detail/**", "/reviews/public").permitAll()
-                .requestMatchers("/addresses/states/**").permitAll()
+                        // === PUBLIC PAGES (no login needed) ===
+                        .requestMatchers("/login", "/register").permitAll()
+                        .requestMatchers("/products/detail/**", "/reviews/public").permitAll()
+                        .requestMatchers("/addresses/states/**").permitAll()
 
-                // === CUSTOMER ACTIONS (logged-in users only) ===
-                .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**", "/addresses/**").authenticated()
+                        // === CUSTOMER ACTIONS (logged-in users only) ===
+                        .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**", "/addresses/**").authenticated()
 
-                // === PRODUCT MANAGEMENT (restricted roles) ===
-                .requestMatchers("/products/new", "/products/save")
-                .hasAnyAuthority("Admin", "Editor")
-                .requestMatchers("/products/edit/**", "/products/delete/**")
-                .hasAnyAuthority("Admin", "Editor", "Shipper")
+                        // === SHIPPER DASHBOARD ===
+                        .requestMatchers("/shipper/**").hasAuthority("Shipper")
 
-                // === BRANDS ===
-                .requestMatchers("/brands/**").hasAnyAuthority("Admin", "Editor")
+                        // === ADMIN DASHBOARD ===
+                        .requestMatchers("/admin/**").hasAuthority("Admin")
 
-                // === ADMIN-ONLY REVIEW MANAGEMENT ===
-                .requestMatchers("/reviews/", "/reviews/page/**", "/reviews/edit/**", "/reviews/detail/**")
-                .hasAuthority("Admin")
+                        // === PRODUCT MANAGEMENT (restricted roles) ===
+                        .requestMatchers("/products/new", "/products/save")
+                        .hasAnyAuthority("Admin", "Editor")
+                        .requestMatchers("/products/edit/**", "/products/delete/**")
+                        .hasAnyAuthority("Admin", "Editor", "Shipper")
 
-                // === OTHER ADMIN AREAS ===
-                .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
+                        // === BRANDS ===
+                        .requestMatchers("/brands/**").hasAnyAuthority("Admin", "Editor")
 
-                // === DEFAULT: any authenticated user can access remaining pages ===
-                .anyRequest().authenticated()
-        )
+                        // === ADMIN-ONLY REVIEW MANAGEMENT ===
+                        .requestMatchers("/reviews/", "/reviews/page/**", "/reviews/edit/**", "/reviews/detail/**")
+                        .hasAuthority("Admin")
+
+                        // === OTHER ADMIN AREAS ===
+                        .requestMatchers("/users/**", "/categories/**").hasAnyAuthority("Admin", "Editor")
+
+                        // === DEFAULT: any authenticated user can access remaining pages ===
+                        .anyRequest().authenticated()
+                )
+
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("email")

@@ -1,87 +1,234 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments :: page_head('Shipping Rates - Shopme Admin', 'none')" />
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:replace="~{fragments :: page_head('Shipping Rates - Admin', 'none')}">
+</head>
 <body>
 <div class="container-fluid">
-	<div th:replace="navigation :: menu"></div>
-	<div>
-		<h2>Manage Shipping Rates</h2>	
-		
-		<a th:href="@{/shipping_rates/new}" class="fas fa-folder-plus fa-2x icon-dark mr-2"></a>
-	</div>
-		
-	<div th:replace="fragments :: search_form_and_message" />
-	
-	<div class="full-details">
-		<table class="table table-bordered table-striped table-hover table-responsive-xl">
-			<thead class="thead-dark">
-				<tr>
-					<th th:replace="fragments :: column_link('id', 'ID', 'none')" />
-					<th th:replace="fragments :: column_link('country', 'Country', 'none')" />
-					<th th:replace="fragments :: column_link('state', 'State', 'none')" />
-					<th th:replace="fragments :: column_link('rate', 'Rate', 'none')" />
-					<th th:replace="fragments :: column_link('days', 'Days', 'none')" />
-					<th th:replace="fragments :: column_link('codSupported', 'COD Supported', 'none')" />
-					
-					<th></th>
-				</tr>								
-			</thead>
-			<tbody>
-				<tr th:each="rate : ${shippingRates}">
-					<td>[[${rate.id}]]</td>
-					<td>[[${rate.country.name}]]</td>
-					<td>[[${rate.state}]]</td>
-					<td>[[${rate.rate}]]</td>
-					<td>[[${rate.days}]]</td>
-					<td>
-						<div th:replace="shipping_rates/shipping_rates_fragment :: cod_support" />
-					</td>
-					<td>
-						<div th:replace="fragments :: edit('shipping rate', '/shipping_rates/edit/' + ${rate.id})" />
-						&nbsp; 
-						<div th:replace="fragments :: delete('shipping rate', ${rate.id}, '/shipping_rates/delete/' + ${rate.id}, true)" />						
-					</td>					
-				</tr>
-			</tbody>
-		</table>
-	</div>
-	
-	<div class="less-details">
-		<div th:each="rate : ${shippingRates}" class="row m-1">
-			<div class="col-4">
-				<span><b>[[${rate.country.name}]]</b></span>
-				<br/>
-				<span>[[${rate.state}]]</span>
-			</div>
-			<div class="col-8">
-				<div>
-					<div th:replace="shipping_rates/shipping_rates_fragment :: cod_support" />
-					&nbsp; 
-					<div th:replace="fragments :: edit('shipping rate', '/shipping_rates/edit/' + ${rate.id})" />
-					&nbsp; 
-					<div th:replace="fragments :: delete('shipping rate', ${rate.id}, '/shipping_rates/delete/' + ${rate.id}, true)" />
-				</div>
-			</div>
-			<div>&nbsp;</div>
-		</div>	
-	</div>		
-	
-	<div th:replace="fragments :: pagination('shipping rates')"></div>
-	<div th:replace="modal_fragments :: confirm_modal" />
-	<div th:replace="fragments :: footer"></div>
-	
-</div>
-	
-<script th:src="@{/js/common_list.js}"></script>
-<script type="text/javascript">
-	moduleURL = "[[@{/shipping_rates}]]";
+	<div th:replace="~{navigation :: menu}"></div>
 
-	$(document).ready(function() {
-		$(".link-delete").on("click", function(e) {
-			e.preventDefault();
-			showDeleteConfirmModal($(this), 'shipping rate');
+	<div class="container mt-4">
+		<h2>🚚 Shipping Rates</h2>
+
+		<!-- === FORM TO ADD/EDIT SHIPPING RATE === -->
+		<div class="card mb-4">
+			<div class="card-header bg-primary text-white">
+				<h4 class="mb-0" th:text="${editing ? 'Edit Shipping Rate' : 'Add New Shipping Rate'}">Add New Shipping Rate</h4>
+			</div>
+			<div class="card-body">
+				<form th:object="${newShippingRate}"
+					  th:action="@{/shipping-rates/save}"
+					  method="post" id="shippingRateForm">
+
+					<input type="hidden" name="id" th:if="${param.editId != null}" th:value="${param.editId[0]}" />
+
+					<div class="row">
+						<div class="col-md-6 mb-3">
+							<label for="country" class="form-label">Country *</label>
+							<select id="country" name="countryId" class="form-select" required>
+								<option value="">── Select Country ──</option>
+								<option th:each="c : ${countries}"
+										th:value="${c.id}"
+										th:text="${c.name + ' (' + c.code + ')'}"
+										th:selected="${selectedCountryId != null && c.id == selectedCountryId}">
+								</option>
+							</select>
+						</div>
+
+						<div class="col-md-6 mb-3">
+							<label for="state" class="form-label">State *</label>
+							<select id="state" name="stateId" class="form-select" required disabled>
+								<option value="">── Select Country First ──</option>
+							</select>
+						</div>
+					</div>
+
+					<!-- Rate & Days -->
+					<div class="row">
+						<div class="col-md-6 mb-3">
+							<label for="rate" class="form-label">Shipping Rate (RM) *</label>
+							<input type="number" step="0.01" min="0" class="form-control" id="rate"
+								   th:field="*{rate}" required />
+						</div>
+						<div class="col-md-6 mb-3">
+							<label for="days" class="form-label">Delivery Days *</label>
+							<input type="number" min="0" max="30" class="form-control" id="days"
+								   th:field="*{days}" required />
+						</div>
+					</div>
+
+					<!-- COD -->
+					<div class="mb-3 form-check">
+						<input type="checkbox" class="form-check-input" id="codSupported"
+							   th:field="*{codSupported}" />
+						<label class="form-check-label" for="codSupported">Cash on Delivery Supported</label>
+					</div>
+
+					<button type="submit" class="btn btn-success">
+						<i class="fas fa-save"></i>
+						<span th:text="${editing ? 'Update Rate' : 'Add Rate'}">Add Rate</span>
+					</button>
+					<button type="button" class="btn btn-secondary" onclick="resetForm()">Cancel</button>
+				</form>
+			</div>
+		</div>
+
+		<!-- === EXISTING RATES TABLE === -->
+		<div class="card">
+			<div class="card-header bg-secondary text-white">
+				<h4 class="mb-0">Existing Shipping Rates</h4>
+			</div>
+			<div class="card-body">
+				<div th:if="${#lists.isEmpty(shippingRates)}" class="alert alert-info">
+					No shipping rates configured yet.
+				</div>
+
+				<table class="table table-hover" th:unless="${#lists.isEmpty(shippingRates)}">
+					<thead class="table-light">
+					<tr>
+						<th>Country</th>
+						<th>Rate</th>
+						<th>Days</th>
+						<th>COD</th>
+						<th>Actions</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr th:each="sr : ${shippingRates}">
+						<td th:text="${sr.country.name}">Country</td>
+						<td th:text="${#numbers.formatCurrency(sr.rate)}">$0.00</td>
+						<td th:text="${sr.days}">3</td>
+						<td>
+							<span th:if="${sr.codSupported}" class="badge bg-success">Yes</span>
+							<span th:unless="${sr.codSupported}" class="badge bg-danger">No</span>
+						</td>
+						<td>
+							<a th:href="@{/shipping-rates/edit/{id}(id=${sr.id})}"
+							   class="btn btn-sm btn-outline-primary me-1">
+								<i class="fas fa-edit"></i> Edit
+							</a>
+							<form th:action="@{/shipping-rates/delete/{id}(id=${sr.id})}" method="post" style="display:inline;">
+								<button type="submit" class="btn btn-sm btn-outline-danger"
+										onclick="return confirm('Delete shipping rate for ${sr.country.name}?')">
+									<i class="fas fa-trash"></i> Delete
+								</button>
+							</form>
+						</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div th:replace="~{fragments :: footer}"></div>
+</div>
+<a id="resetLink" th:href="@{/shipping-rates}" style="display:none;"></a>
+
+
+<script th:inline="javascript">
+	document.addEventListener('DOMContentLoaded', function() {
+
+		const successMsg = /*[[${message}]]*/ null;
+		if (successMsg) {
+			showToast(successMsg, 'success');
+		}
+	});
+
+	function showToast(message, type = 'success') {
+		const toastElement = document.getElementById('flash-toast');
+		const toastBody = document.getElementById('flash-message');
+
+		if (!toastElement || !toastBody) return;
+
+		const safeMsg = String(message).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		toastBody.innerHTML = safeMsg;
+		toastElement.className = `toast align-items-center text-white border-0 ${
+				type === 'success' ? 'bg-success' : 'bg-danger'
+		}`;
+
+		const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+		toast.show();
+	}
+
+	function loadStates(countryId) {
+		const stateSelect = document.getElementById('state');
+		if (!stateSelect) {
+			console.error("State select element not found!");
+			return;
+		}
+
+		stateSelect.innerHTML = '<option value="">── Loading... ──</option>';
+
+		if (!countryId || countryId <= 0) {
+			stateSelect.innerHTML = '<option value="">── Select Country First ──</option>';
+			stateSelect.disabled = true;
+			return;
+		}
+
+		stateSelect.disabled = true;
+
+		const baseUrl = /*[[ @{/} ]]*/ '/';
+		const url = baseUrl + 'api/states?countryId=' + encodeURIComponent(countryId);
+
+		// console.log("Fetching states from:", url);
+
+		fetch(url, {
+			headers: { 'Accept': 'application/json' }
+		})
+				.then(response => {
+					console.log("States API response:", response.status);
+					if (!response.ok) throw new Error(`HTTP ${response.status}`);
+					return response.json();
+				})
+				.then(states => {
+					// console.log("Received states:", states);
+
+					let html = '<option value="">── Select State ──</option>';
+					if (Array.isArray(states) && states.length > 0) {
+						states.forEach(state => {
+							const safeName = String(state.name)
+									.replace(/&/g, '&amp;')
+									.replace(/</g, '&lt;')
+									.replace(/>/g, '&gt;');
+							html += `<option value="${state.id}">${safeName}</option>`;
+						});
+					} else {
+						html = '<option value="">── No states available ──</option>';
+					}
+
+					stateSelect.innerHTML = html;
+					stateSelect.disabled = false;
+				})
+				.catch(error => {
+					console.error("State loading failed:", error);
+					stateSelect.innerHTML = '<option value="">── Error Loading States ──</option>';
+					stateSelect.disabled = true;
+				});
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		const countrySelect = document.getElementById('country');
+		const stateSelect = document.getElementById('state');
+
+		if (!countrySelect || !stateSelect) {
+			console.error("Country or State select elements missing!");
+			return;
+		}
+
+		if (countrySelect.value) {
+			// console.log("Initializing states for country:", countrySelect.value);
+			loadStates(countrySelect.value);
+		}
+
+		countrySelect.addEventListener('change', function() {
+			// console.log("Country changed to:", this.value);
+			loadStates(this.value);
+			stateSelect.value = ''; // Reset selection
 		});
 	});
-</script>
-</body>
+
+	function resetForm() {
+		window.location.href = /*[[ @{/shipping-rates} ]]*/ + '';
+	}
+</script></body>
 </html>

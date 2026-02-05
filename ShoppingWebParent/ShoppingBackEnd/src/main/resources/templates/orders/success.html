@@ -15,8 +15,8 @@
 
             <div class="mt-4 p-3 bg-light rounded">
                 <h5>Order Summary</h5>
-                <p>Total: <strong th:text="${#numbers.formatCurrency(order.total)}">$0.00</strong></p>
-                <p>Shipping to: <strong th:text="${order.address.fullName}">Name</strong></p>
+                <p>Total: <strong th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</strong></p>
+                <p>Shipping to: <strong th:text="${order.shippingAddress.fullName}">Name</strong></p>
             </div>
 
             <div class="mt-4">

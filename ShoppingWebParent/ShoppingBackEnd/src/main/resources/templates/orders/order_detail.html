@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:replace="~{fragments :: page_head('Order Details - Shopme', 'none')}" />
+<body>
+<div class="container-fluid">
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-box me-2"></i> Order #[[${order.orderNumber}]]</h2>
+            <a th:href="@{/orders}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+        </div>
+
+        <!-- Order Summary Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📋 Order Summary</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Shipping Address</h5>
+                        <p>
+                            <strong th:text="${order.customer.fullName}">Name</strong><br/>
+                            <span th:text="${order.shippingAddress.addressLine1}">Address</span><br/>
+                            <span th:if="${order.shippingAddress.addressLine2}" th:text="${order.shippingAddress.addressLine2}">Address2</span><br/>
+                            <span th:text="${order.shippingAddress.city}">City</span>,
+                            <span th:text="${order.shippingAddress.state?.name ?: ''}">State</span>
+                            <span th:text="${order.shippingAddress.postalCode}">Postal</span><br/>
+                            <strong th:text="${order.shippingAddress.country.name}">Country</strong>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Order Details</h5>
+                        <p>
+                            <strong>Status:</strong>
+                            <span class="badge bg-secondary" th:text="${order.status}">PENDING</span><br/>
+                            <strong>Order Date:</strong>
+                            <span th:text="${#temporals.format(order.orderTime, 'dd MMM yyyy HH:mm')}">Date</span><br/>
+                            <strong>Payment Method:</strong>
+                            <span th:text="${order.paymentMethod}">CASH_ON_DELIVERY</span><br/>
+                            <strong>Total:</strong>
+                            <span th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">📦 Order Items</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="detail : ${order.orderDetails}">
+                        <td>
+                            <strong th:text="${detail.product.name}">Product</strong>
+                        </td>
+                        <td class="text-center" th:text="${detail.quantity}">1</td>
+                        <td class="text-end" th:text="${#numbers.formatCurrency(detail.unitPrice)}">$0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatCurrency(detail.subtotal)}">$0.00</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td colspan="3" class="text-end fw-bold">Shipping Cost</td>
+                        <td class="text-end fw-bold" th:text="${#numbers.formatCurrency(order.shippingCost)}">$0.00</td>
+                    </tr>
+                    <tr class="table-light">
+                        <td colspan="3" class="text-end fw-bold fs-5">Grand Total</td>
+                        <td class="text-end fw-bold fs-5" th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Delivery Tracking -->
+        <div class="card" sec:authorize="hasAuthority('Customer')">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">🚚 Delivery Tracking</h4>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item" th:each="track : ${tracks}">
+                        <div class="timeline-icon bg-primary">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6 class="fw-bold" th:text="${track.status}">STATUS</h6>
+                            <small class="text-muted" th:text="${#temporals.format(track.updatedTime, 'dd MMM yyyy HH:mm')}">Time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+        margin: 20px 0;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-icon {
+        position: absolute;
+        left: -30px;
+        top: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+</style>
+</body>
+</html>

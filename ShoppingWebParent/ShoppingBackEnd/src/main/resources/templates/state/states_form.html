@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:replace="~{fragments :: page_head('State Form - Admin', 'none')}"></head>
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0" th:text="${state.id != null ? 'Edit State' : 'Add New State'}">
+                    Add New State
+                </h4>
+            </div>
+            <div class="card-body">
+                <form th:object="${state}" th:action="@{/admin/states/save}" method="post">
+                    <input type="hidden" th:field="*{id}" />
+
+                    <div class="mb-3">
+                        <label for="countryId" class="form-label">Country *</label>
+                        <select class="form-select" id="countryId" name="country.id" required>
+                            <option value="">── Select Country ──</option>
+                            <option th:each="c : ${countries}"
+                                    th:value="${c.id}"
+                                    th:text="${c.name}"
+                                    th:selected="${state.country != null && state.country.id == c.id}">
+                                Country
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">State Name *</label>
+                        <input type="text" class="form-control" id="name"
+                               th:field="*{name}" required maxlength="64"
+                               placeholder="e.g., California, Selangor, Singapore" />
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save State
+                    </button>
+                    <a th:href="@{/admin/states}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>

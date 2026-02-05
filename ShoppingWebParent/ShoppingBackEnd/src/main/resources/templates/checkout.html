@@ -54,24 +54,28 @@
                         </thead>
                         <tbody>
                         <tr th:each="item : ${cartItems}">
-                            <td>
-                                <strong th:text="${item.product.name}">Product</strong>
-                            </td>
+                            <td><strong th:text="${item.product.name}">Product</strong></td>
                             <td class="text-center" th:text="${item.quantity}">Qty</td>
                             <td class="text-end fw-bold"
                                 th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">
                                 $0.00
                             </td>
                         </tr>
-                        <tr class="table-light">
-                            <td>
-                                <strong>Total</strong>
+
+                        <tr class="table-active">
+                            <td colspan="2" class="text-end fw-bold">Shipping Fee</td>
+                            <td id="shipping-fee" class="text-end fw-bold text-success"
+                                th:text="${#numbers.formatCurrency(shippingFee)}">
+                                $0.00
                             </td>
-                            <td class="text-center" th:text="${totalQuantity}">0</td>
-                            <td class="text-end fw-bold"
-                                  th:text="${#numbers.formatCurrency(cartTotal)}">
-                                        $0.00
-                                    </td>
+                        </tr>
+
+                        <tr class="table-light">
+                            <td colspan="2" class="text-end fw-bold fs-5">Grand Total</td>
+                            <td id="grand-total" class="text-end fw-bold fs-5 text-danger"
+                                th:text="${#numbers.formatCurrency(grandTotal)}">
+                                $0.00
+                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -106,5 +110,64 @@
 
     <div th:replace="~{fragments :: footer}"></div>
 </div>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const addressSelect = document.querySelector('[name="addressId"]');
+        const shippingFeeElem = document.getElementById('shipping-fee');
+        const grandTotalElem = document.getElementById('grand-total');
+        const cartTotal = /*[[${cartTotal}]]*/ 0;
+
+        if (!addressSelect || !shippingFeeElem || !grandTotalElem) return;
+
+        const baseUrl = /*[[ @{/} ]]*/ '/';
+
+        function updateShippingFee() {
+            const addressId = addressSelect.value;
+            if (!addressId || isNaN(addressId)) {
+                updateTotals(0);
+                return;
+            }
+
+            const url = baseUrl + 'api/shipping-fee?addressId=' + encodeURIComponent(addressId);
+
+            fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Invalid response');
+                    return response.json();
+                })
+                .then(shippingFee => {
+                    const fee = (typeof shippingFee === 'number' && !isNaN(shippingFee))
+                        ? shippingFee
+                        : 0;
+                    updateTotals(fee);
+                })
+                .catch(error => {
+                    console.error('Failed to load shipping fee:', error);
+                    updateTotals(0);
+                });
+        }
+
+        function updateTotals(shippingFee) {
+            const grandTotal = cartTotal + shippingFee;
+            shippingFeeElem.textContent = formatCurrency(shippingFee);
+            grandTotalElem.textContent = formatCurrency(grandTotal);
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('ms-MY', {
+                style: 'currency',
+                currency: 'MYR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        updateShippingFee();
+        addressSelect.addEventListener('change', updateShippingFee);
+    });
+</script>
 </body>
 </html>

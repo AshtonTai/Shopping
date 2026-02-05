@@ -87,22 +87,19 @@
 							</a>
 						</li>
 
-						<!-- Divider -->
-						<li><hr class="dropdown-divider"></li>
-
 						<!-- Settings (visible to Customer or Admin) -->
-						<li>
+						<li sec:authorize="hasAnyAuthority('Admin', 'Editor')">
 							<a class="dropdown-item" th:href="@{/shipping-rates}">
 								<i class="fas fa-shipping-fast me-2"></i> Shipping Rates
 							</a>
 						</li>
-						<li sec:authorize="hasAuthority('Admin')">
-							<a class="dropdown-item" th:href="@{/settings#countries}">
+						<li sec:authorize="hasAnyAuthority('Admin', 'Editor')">
+							<a class="dropdown-item" th:href="@{/admin/countries}">
 								<i class="fas fa-globe me-2"></i> Countries
 							</a>
 						</li>
-						<li sec:authorize="hasAuthority('Admin')">
-							<a class="dropdown-item" th:href="@{/settings#states}">
+						<li sec:authorize="hasAnyAuthority('Admin', 'Editor')">
+							<a class="dropdown-item" th:href="@{/admin/states}">
 								<i class="fas fa-flag me-2"></i> States
 							</a>
 						</li>

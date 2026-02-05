@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: page_head('Edit Address - Shopme', 'none')}" />
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-edit me-2"></i> Edit Address</h2>
+            <a th:href="@{/addresses}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Addresses
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form th:object="${address}" th:action="@{/addresses/{id}(id=${address.id})}" method="post">
+                    <input type="hidden" name="_method" value="put" />
+
+                    <!-- CRITICAL: Preserve country/state IDs -->
+                    <input type="hidden" name="countryId" th:value="${address.country.id}" />
+                    <input type="hidden" name="stateId" th:value="${address.state?.id}" />
+
+                    <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">
+                        <ul>
+                            <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                        </ul>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" th:field="*{fullName}" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone *</label>
+                            <input type="text" class="form-control" th:field="*{phone}" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address Line 1 *</label>
+                        <input type="text" class="form-control" th:field="*{addressLine1}" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control" th:field="*{addressLine2}" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">City *</label>
+                            <input type="text" class="form-control" th:field="*{city}" required />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Postal Code *</label>
+                            <input type="text" class="form-control" th:field="*{postalCode}" required />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Country *</label>
+                            <input type="text" class="form-control"
+                                   th:value="${address.country.name}"
+                                   readonly />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">State *</label>
+                        <input type="text" class="form-control"
+                               th:value="${address.state?.name ?: 'N/A'}"
+                               readonly />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" th:field="*{isDefault}" id="isDefault" />
+                        <label class="form-check-label" for="isDefault">Set as default shipping address</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Update Address
+                    </button>
+                    <a th:href="@{/addresses}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>
