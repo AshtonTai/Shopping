@@ -126,5 +126,57 @@
 
     <div th:replace="~{fragments :: footer}"></div>
 </div>
+<!-- Add this before closing </body> tag -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:inline="javascript">
+    function connectAdminWebSocket() {
+        const socket = new SockJS(/*[[@{/order-updates}]]*/ '/order-updates');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Admin connected to WebSocket');
+
+            // Listen for ALL order events
+            stompClient.subscribe('/topic/orders', function(message) {
+                const event = JSON.parse(message.body);
+
+                // Auto-refresh dashboard for any order change
+                showToast('Order updated: ' + event.orderNumber + ' → ' + event.status, 'info');
+
+                // Auto-refresh after 2 seconds to show updated stats
+                setTimeout(() => location.reload(), 2000);
+            });
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('admin-toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'admin-toast-container';
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toastHTML = `
+        <div class="toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'}" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+        toastContainer.innerHTML = toastHTML;
+        const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+        toast.show();
+    }
+
+    // Connect when page loads
+    document.addEventListener('DOMContentLoaded', connectAdminWebSocket);
+</script>
 </body>
 </html>

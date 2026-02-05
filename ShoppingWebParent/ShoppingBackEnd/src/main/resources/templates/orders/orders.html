@@ -57,14 +57,15 @@
 							</td>
 							<td>
 								<div th:replace="~{fragments :: format_currency(${order.totalAmount})}"></div>
+							</td>
 							<td>
-                                    <span class="badge"
-										  th:classappend="${order.status == 'DELIVERED' ? 'bg-success' :
-                         					order.status == 'SHIPPED' ? 'bg-info' :
-                         					order.status == 'CONFIRMED' ? 'bg-warning' : 'bg-secondary'}"
-										  th:text="${order.status}">
-        										Status
-    								</span>
+								<span class="badge"
+									  th:classappend="${order.status == 'DELIVERED' ? 'bg-success' :
+									                 order.status == 'SHIPPED' ? 'bg-info' :
+									                 order.status == 'CONFIRMED' ? 'bg-warning' : 'bg-secondary'}"
+									  th:text="${order.status}">
+									Status
+								</span>
 							</td>
 							<td>
 								<a th:href="@{'/orders/detail/' + ${order.id}}"
@@ -113,6 +114,55 @@
 			});
 		});
 	});
+</script>
+
+<!-- WebSocket Implementation -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+	<div id="websocket-toast" class="toast align-items-center text-white border-0" role="alert">
+		<div class="d-flex">
+			<div class="toast-body" id="websocket-message"></div>
+			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:inline="javascript">
+	function connectCustomerWebSocket() {
+		const socket = new SockJS(/*[[@{/order-updates}]]*/ '/order-updates');
+		const stompClient = Stomp.over(socket);
+
+		stompClient.connect({}, function(frame) {
+			stompClient.subscribe('/topic/orders', function(message) {
+				const event = JSON.parse(message.body);
+				const currentCustomerId = /*[[${#authentication.principal.id}]]*/ null;
+
+				if (event.customerId === currentCustomerId) {
+					showToast('Your order #' + event.orderNumber + ' status updated to: ' + event.status, 'info');
+					if (event.eventType === 'DELIVERED') {
+						setTimeout(() => location.reload(), 3000);
+					}
+				}
+			});
+		});
+	}
+
+	function showToast(message, type = 'info') {
+		const toastElement = document.getElementById('websocket-toast');
+		const toastBody = document.getElementById('websocket-message');
+
+		if (!toastElement || !toastBody) return;
+
+		const safeMsg = String(message).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		toastBody.innerHTML = safeMsg;
+		toastElement.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'}`;
+
+		const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 5000 });
+		toast.show();
+	}
+
+	document.addEventListener('DOMContentLoaded', connectCustomerWebSocket);
 </script>
 </body>
 </html>
