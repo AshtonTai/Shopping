@@ -31,7 +31,6 @@ public class ShippingRate {
     public Integer getDays() { return days; }
     public boolean isCodSupported() { return codSupported; }
 
-    // Setters (optional but good for JPA)
     public void setId(Integer id) { this.id = id; }
     public void setCountry(Country country) { this.country = country; }
     public void setState(State state) { this.state = state; }

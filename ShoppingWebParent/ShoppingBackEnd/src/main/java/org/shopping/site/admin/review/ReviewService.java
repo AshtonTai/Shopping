@@ -1,6 +1,5 @@
 package org.shopping.site.admin.review;
 
-import org.shopping.entity.product.Product;
 import org.shopping.entity.User;
 import org.shopping.entity.review.Review;
 import org.shopping.exeption.ReviewNotFoundException;

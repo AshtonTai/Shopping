@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-	  xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+	  xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5  ">
 <head th:replace="~{fragments :: page_head('Products - Shopme Admin', 'none')}" />
 <body
 		th:data-cart-add-url="@{/cart/add}"
@@ -58,6 +58,7 @@
 				<th th:replace="~{fragments :: column_link('name', 'Product Name', 'none')}" />
 				<th>Brand</th>
 				<th>Category</th>
+				<th>Price</th> <!-- NEW PRICE COLUMN -->
 				<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
 					<th>Enabled</th>
 				</th:block>
@@ -78,6 +79,20 @@
 				</td>
 				<td class="hideable-column">[[${product.brand.name}]]</td>
 				<td class="hideable-column">[[${product.category.name}]]</td>
+
+				<!-- PRICE COLUMN WITH DISCOUNT DISPLAY -->
+				<td>
+					<div th:if="${product.discountPercent > 0}" class="price-with-discount">
+						<span class="original-price text-muted">
+							<del th:text="${#numbers.formatCurrency(product.price)}">$0.00</del>
+						</span>
+						<span class="discounted-price text-success fw-bold"
+							  th:text="${#numbers.formatCurrency(product.discountPrice)}">$0.00</span>
+					</div>
+					<div th:unless="${product.discountPercent > 0}">
+						<span th:text="${#numbers.formatCurrency(product.price)}">$0.00</span>
+					</div>
+				</td>
 
 				<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
 					<td>
@@ -107,11 +122,11 @@
 
 						<!-- Delete ONLY for Admin/Editor -->
 						<a class="fas fa-trash-alt fa-lg text-danger"
-							   href="#"
-							   data-product-id="${product.id}"
-							   data-product-name="${product.name}"
-							   onclick="confirmDeleteFromData(this)"
-							   title="Delete product"></a>
+						   href="#"
+						   data-product-id="${product.id}"
+						   data-product-name="${product.name}"
+						   onclick="confirmDeleteFromData(this)"
+						   title="Delete product"></a>
 					</div>
 				</td>
 			</tr>
@@ -120,18 +135,50 @@
 	</div>
 
 	<div class="less-details">
-		<div th:each="product : ${listProducts}" class="row m-1">
-			<div class="col-4">
+		<div th:each="product : ${listProducts}" class="row m-1 border rounded p-2 mb-2">
+			<div class="col-4 col-md-3">
 				<img th:src="@{${product.mainImagePath}}" style="width: 80px" class="img-fluid" />
 			</div>
-			<div class="col-8">
+			<div class="col-8 col-md-9">
 				<div>
 					<a class="link-detail" th:href="@{'/products/detail/' + ${product.id}}">[[${product.shortName}]]</a>
 				</div>
 				<div class="mt-2">
-					<a class="fas fa-file-alt fa-2x icon-green link-detail"
-					   th:href="@{'/products/detail/' + ${product.id}}"></a>
+					<!-- BRAND & CATEGORY -->
+					<small class="text-muted">
+						[[${product.brand.name}]] • [[${product.category.name}]]
+					</small>
+					<br/>
 
+					<!-- PRICE WITH DISCOUNT -->
+					<div th:if="${product.discountPercent > 0}" class="mt-1">
+						<span class="original-price text-muted">
+							<del th:text="${#numbers.formatCurrency(product.price)}">$0.00</del>
+						</span>
+						<span class="discounted-price text-success fw-bold ms-2"
+							  th:text="${#numbers.formatCurrency(product.discountPrice)}">$0.00</span>
+					</div>
+					<div th:unless="${product.discountPercent > 0}" class="mt-1">
+						<span th:text="${#numbers.formatCurrency(product.price)}">$0.00</span>
+					</div>
+
+					<!-- IN STOCK STATUS -->
+					<small th:if="${product.inStock > 0}" class="text-success">
+						<i class="fas fa-check-circle"></i> In Stock ([[${product.inStock}]])
+					</small>
+					<small th:if="${product.inStock <= 0}" class="text-danger">
+						<i class="fas fa-times-circle"></i> Out of Stock
+					</small>
+
+					<!-- RATINGS -->
+					<div th:if="${product.reviewCount > 0}" class="mt-1">
+						<span th:each="i : ${#numbers.sequence(0, 4)}">
+							<i th:class="${product.averageRating > i ? 'fas fa-star text-warning' : 'far fa-star text-muted'}"></i>
+						</span>
+						<small class="text-muted ms-1">([[${product.reviewCount}]] reviews)</small>
+					</div>
+				</div>
+				<div class="mt-2">
 					<!-- Customer actions -->
 					<div sec:authorize="hasAuthority('Customer')">
 						<button type="button" class="btn btn-success btn-sm me-1"
@@ -154,7 +201,6 @@
 					</div>
 				</div>
 			</div>
-			<div>&nbsp;</div>
 		</div>
 	</div>
 
@@ -283,6 +329,24 @@
 		}
 	});
 </script>
+
+<!-- Price Display Styles -->
+<style>
+	.price-with-discount {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.original-price {
+		font-size: 0.875rem;
+		text-decoration: line-through;
+	}
+	.discounted-price {
+		font-size: 1.125rem;
+		font-weight: bold;
+	}
+</style>
+
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
 	<div id="cart-toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
 		<div class="d-flex">

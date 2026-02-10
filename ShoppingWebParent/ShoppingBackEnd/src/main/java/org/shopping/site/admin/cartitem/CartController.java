@@ -2,6 +2,7 @@ package org.shopping.site.admin.cartitem;
 
 import org.shopping.entity.CartItem;
 import org.shopping.entity.User;
+import org.shopping.entity.product.Product;
 import org.shopping.site.admin.BaseController;
 import org.shopping.site.admin.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,10 +50,9 @@ public class CartController extends BaseController {
     @GetMapping("/cart")
     public String viewCart(Model model, Authentication auth) {
         Integer userId = getCurrentUserId(auth);
-
         List<CartItem> cartItems = cartService.getCartItems(userId);
         if (cartItems == null) {
-            cartItems = List.of(); // or new ArrayList<>()
+            cartItems = List.of();
         }
 
         int totalQuantity = cartItems.stream()
@@ -63,8 +63,15 @@ public class CartController extends BaseController {
                 .filter(Objects::nonNull)
                 .filter(item -> item.getProduct() != null)
                 .map(item -> {
-                    BigDecimal price = BigDecimal.valueOf(item.getProduct().getPrice());
-                    return price.multiply(BigDecimal.valueOf(item.getQuantity()));
+                    Product p = item.getProduct();
+                    double finalPrice;
+                    if (p.getDiscountPercent() > 0) {
+                        finalPrice = p.getDiscountPrice();
+                    } else {
+                        finalPrice = p.getPrice();
+                    }
+                    return BigDecimal.valueOf(finalPrice)
+                            .multiply(BigDecimal.valueOf(item.getQuantity()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

@@ -59,7 +59,7 @@
                     <thead>
                     <tr>
                         <th>Product</th>
-                        <th class="text-center">Quantity</th>
+                        <th class="text-center">Qty</th>
                         <th class="text-end">Price</th>
                         <th class="text-end">Total</th>
                     </tr>
@@ -68,15 +68,60 @@
                     <tr th:each="detail : ${order.orderDetails}">
                         <td>
                             <strong th:text="${detail.product.name}">Product</strong>
+                            <!-- Show original price if different -->
+                            <div th:if="${detail.originalUnitPrice != null && detail.originalUnitPrice.compareTo(detail.unitPrice) > 0}"
+                                 class="text-muted small mt-1">
+                                <del th:text="${#numbers.formatCurrency(detail.originalUnitPrice)}"></del>
+                                <span class="text-success ms-2">
+                                You saved [[${#numbers.formatCurrency(detail.originalUnitPrice.subtract(detail.unitPrice))}]]/item
+                            </span>
+                            </div>
                         </td>
                         <td class="text-center" th:text="${detail.quantity}">1</td>
                         <td class="text-end" th:text="${#numbers.formatCurrency(detail.unitPrice)}">$0.00</td>
                         <td class="text-end" th:text="${#numbers.formatCurrency(detail.subtotal)}">$0.00</td>
                     </tr>
+
+                    <!-- Subtotal (after product discounts) -->
                     <tr class="table-active">
-                        <td colspan="3" class="text-end fw-bold">Shipping Cost</td>
+                        <td colspan="3" class="text-end fw-bold">Subtotal</td>
+                        <td class="text-end fw-bold"
+                            th:with="subtotal=${order.totalAmount.subtract(order.shippingCost)}"
+                            th:text="${#numbers.formatCurrency(subtotal)}">
+                            $0.00
+                        </td>
+                    </tr>
+
+                    <!-- Product Discount -->
+                    <tr th:if="${totalProductDiscount.compareTo(T(java.math.BigDecimal).ZERO) > 0}" class="table-warning">
+                        <td colspan="3" class="text-end fw-bold">Product Discounts</td>
+                        <td class="text-end fw-bold text-success"
+                            th:text="${#numbers.formatCurrency(totalProductDiscount)}">
+                            $0.00
+                        </td>
+                    </tr>
+
+                    <!-- Voucher Discount -->
+                    <tr th:if="${order.appliedVoucher != null}" class="table-info">
+                        <td colspan="3" class="text-end fw-bold">
+                            Voucher (<span th:text="${order.appliedVoucher.code}">VOUCHER123</span>)
+                        </td>
+                        <td class="text-end fw-bold text-success"
+                            th:text="${#numbers.formatCurrency(order.discountAmount)}">
+                            $0.00
+                        </td>
+                    </tr>
+
+                    <!-- Shipping -->
+                    <tr class="table-active">
+                        <td colspan="3" class="text-end fw-bold">
+                            Shipping Cost
+                            <span th:if="${order.freeShippingApplied}" class="badge bg-success ms-2">Free Shipping</span>
+                        </td>
                         <td class="text-end fw-bold" th:text="${#numbers.formatCurrency(order.shippingCost)}">$0.00</td>
                     </tr>
+
+                    <!-- Grand Total -->
                     <tr class="table-light">
                         <td colspan="3" class="text-end fw-bold fs-5">Grand Total</td>
                         <td class="text-end fw-bold fs-5" th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</td>
@@ -85,6 +130,7 @@
                 </table>
             </div>
         </div>
+
 
         <!-- Delivery Tracking -->
         <div class="card" sec:authorize="hasAuthority('Customer')">

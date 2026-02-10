@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -93,15 +94,26 @@ public class OrderController extends BaseController {
         Integer userId = getCurrentUserId(auth);
         Order order = orderService.findById(orderId);
 
-        // Security check
         if (!order.getCustomer().getId().equals(userId)) {
             return "redirect:/orders";
         }
 
         List<OrderTrack> tracks = orderTrackRepo.findByOrder_IdOrderByUpdatedTimeAsc(orderId);
 
+        BigDecimal totalProductDiscount = order.getOrderDetails().stream()
+                .map(detail -> {
+                    if (detail.getOriginalUnitPrice() != null) {
+                        return detail.getOriginalUnitPrice()
+                                .subtract(detail.getUnitPrice())
+                                .multiply(BigDecimal.valueOf(detail.getQuantity()));
+                    }
+                    return BigDecimal.ZERO;
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         model.addAttribute("order", order);
         model.addAttribute("tracks", tracks);
+        model.addAttribute("totalProductDiscount", totalProductDiscount);
         return "orders/order_detail";
     }
 }

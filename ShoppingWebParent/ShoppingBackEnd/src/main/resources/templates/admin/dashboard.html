@@ -98,7 +98,7 @@
                                    th:text="${order.orderNumber}">ORD-123</a>
                             </td>
                             <td th:text="${order.customer.email}">customer@email.com</td>
-                            <td th:text="${#temporals.format(order.orderTime, 'HH:mm')}">14:30</td>
+                            <td th:text="${#temporals.format(order.orderTime, 'MM/dd HH:mm')}">01/01 14:30</td>
                             <td>
                                 <span class="badge bg-secondary" th:text="${order.orderDetails.size()} + ' items'">3 items</span>
                             </td>

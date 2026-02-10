@@ -32,15 +32,12 @@ public class CartService {
             throw new RuntimeException("Not enough stock available. Only " + product.getInStock() + " left.");
         }
 
-        // Check if item already exists in cart
         Optional<CartItem> existingItem = cartItemRepo.findByCustomer_IdAndProduct_Id(customerId, productId);
         if (existingItem.isPresent()) {
-            // Update quantity
             CartItem item = existingItem.get();
             item.setQuantity(item.getQuantity() + quantity);
             cartItemRepo.save(item);
         } else {
-            // Create new cart item
             CartItem newItem = new CartItem();
             newItem.setCustomer(new User(customerId));
             newItem.setProduct(product);

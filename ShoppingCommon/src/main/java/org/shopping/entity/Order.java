@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,4 +44,12 @@ public class Order {
     private LocalDateTime confirmedTime;
     private LocalDateTime shippedTime;
     private LocalDateTime deliveredTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id")
+    private Voucher appliedVoucher;
+
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+    private boolean freeShippingApplied;
+
 }

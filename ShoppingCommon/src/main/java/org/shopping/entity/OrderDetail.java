@@ -25,6 +25,12 @@ public class OrderDetail {
     private Product product;
 
     private Integer quantity;
+
+    @Column(name = "unit_price")
     private BigDecimal unitPrice;
+
+    @Column(name = "original_unit_price")
+    private BigDecimal originalUnitPrice;
+
     private BigDecimal subtotal;
 }

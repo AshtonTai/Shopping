@@ -82,9 +82,10 @@
                                                 1
                                             </span>
                                     </td>
-                                    <td class="text-end fw-bold text-primary fs-5"
-                                        th:text="${#numbers.formatCurrency(item.product.price * item.quantity)}">
-                                        $10.00
+                                    <td class="text-end fw-bold"
+                                        th:with="finalPrice=${item.product.discountPercent != null && item.product.discountPercent > 0 ? item.product.discountPrice : item.product.price}"
+                                        th:text="${#numbers.formatCurrency(finalPrice * item.quantity)}">
+                                        $0.00
                                     </td>
                                     <td class="text-center">
                                         <form th:action="@{/cart/remove}" method="post" class="d-inline">

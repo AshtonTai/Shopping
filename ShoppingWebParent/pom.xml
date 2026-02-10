@@ -22,7 +22,6 @@
         <java.version>17</java.version>
     </properties>
 
-    <!-- ✅ Centralize WebJar versions here -->
     <dependencyManagement>
         <dependencies>
             <!-- WebJars -->
@@ -44,7 +43,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- ✅ Only put truly shared dependencies here -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

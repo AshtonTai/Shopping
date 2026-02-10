@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -37,16 +36,19 @@ public class OrderService {
     }
 
     public Order createOrder(Integer customerId, Integer addressId, String paymentMethod, List<CartItem> cartItems) {
+        return createOrder(customerId, addressId, paymentMethod, cartItems, null);
+    }
+
+    public Order createOrder(Integer customerId, Integer addressId, String paymentMethod,
+                             List<CartItem> cartItems, Voucher appliedVoucher) {
         Address address = addressRepo.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found"));
 
         if (address.getCountry() == null) {
             throw new RuntimeException("Address must have a country");
         }
-//        if (address.getState() == null) {
-//            throw new RuntimeException("Address must have a state");
-//        }
 
+        // Calculate subtotal from cart items
         BigDecimal subtotal = cartItems.stream()
                 .map(item -> {
                     float price = item.getProduct().getPrice();
@@ -55,19 +57,15 @@ public class OrderService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Calculate discount amount
+        BigDecimal discountAmount = calculateDiscount(subtotal, appliedVoucher);
+        BigDecimal discountedSubtotal = subtotal.subtract(discountAmount);
 
-        ShippingRate rate = shippingRateRepo.findByCountryAndState(
-                address.getCountry(),
-                address.getState()
-        );
+        // Calculate shipping cost (free shipping if voucher applies)
+        BigDecimal shippingCost = calculateShippingCost(address, appliedVoucher);
 
-        if (rate == null) {
-            throw new RuntimeException("No shipping rate available for " +
-                    address.getCountry().getName() + " - " + address.getState().getName());
-        }
-
-        BigDecimal shippingCost = rate.getRate();
-        BigDecimal total = subtotal.add(shippingCost);
+        // Calculate final total
+        BigDecimal total = discountedSubtotal.add(shippingCost);
 
         Order order = new Order();
         order.setCustomer(new User(customerId));
@@ -77,6 +75,10 @@ public class OrderService {
         order.setShippingCost(shippingCost);
         order.setStatus(OrderStatus.PENDING);
         order.setOrderNumber(generateOrderNumber());
+        order.setAppliedVoucher(appliedVoucher);
+        order.setDiscountAmount(discountAmount);
+        order.setFreeShippingApplied(appliedVoucher != null &&
+                appliedVoucher.getType() == VoucherType.FREE_SHIPPING);
 
         Order savedOrder = orderRepo.save(order);
 
@@ -137,6 +139,35 @@ public class OrderService {
         orderEventService.broadcastOrderEvent(event);
     }
 
+    private BigDecimal calculateDiscount(BigDecimal subtotal, Voucher voucher) {
+        if (voucher == null || voucher.getType() == VoucherType.FREE_SHIPPING) {
+            return BigDecimal.ZERO;
+        }
+
+        switch (voucher.getType()) {
+            case PERCENTAGE:
+                BigDecimal percentage = voucher.getValue().min(BigDecimal.valueOf(100));
+                return subtotal.multiply(percentage).divide(BigDecimal.valueOf(100));
+            case FIXED_AMOUNT:
+                return voucher.getValue().min(subtotal); // Don't exceed subtotal
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    private BigDecimal calculateShippingCost(Address address, Voucher voucher) {
+        if (voucher != null && voucher.getType() == VoucherType.FREE_SHIPPING) {
+            return BigDecimal.ZERO;
+        }
+
+        ShippingRate rate = shippingRateRepo.findByCountryAndState(
+                address.getCountry(),
+                address.getState()
+        );
+
+        return rate != null ? rate.getRate() : BigDecimal.ZERO;
+    }
+
     private void createOrderTrack(Order order, String status) {
         OrderTrack track = new OrderTrack();
         track.setOrder(order);
@@ -155,7 +186,7 @@ public class OrderService {
         return event;
     }
 
-    private String generateOrderNumber() {
+    public String generateOrderNumber() { // ← Make sure it's public
         return "ORD-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" +
                 String.format("%03d", (int)(Math.random() * 1000));
     }

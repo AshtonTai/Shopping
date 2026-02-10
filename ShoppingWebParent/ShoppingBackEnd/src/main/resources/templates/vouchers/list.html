@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: page_head('Vouchers - Admin', 'none')}" />
+<body>
+<div class="container-fluid">
+    <div th:replace="~{navigation :: menu}"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-ticket-alt me-2"></i> Vouchers</h2>
+            <a th:href="@{/vouchers/new}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> New Voucher
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(vouchers)}" class="alert alert-info">
+            No vouchers created yet.
+        </div>
+
+        <table class="table table-hover" th:unless="${#lists.isEmpty(vouchers)}">
+            <thead class="table-light">
+            <tr>
+                <th>Code</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Valid Period</th>
+                <th>Usage</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="voucher : ${vouchers}">
+                <td><code th:text="${voucher.code}">SAVE20</code></td>
+                <td th:text="${voucher.type}">PERCENTAGE</td>
+                <td th:text="${voucher.value}">20.00</td>
+                <td>
+                    <span th:if="${voucher.validFrom}" th:text="${#temporals.format(voucher.validFrom, 'MM/dd')}">01/01</span>
+                    <span th:if="${voucher.validUntil}" th:text="' - ' + ${#temporals.format(voucher.validUntil, 'MM/dd')}"> - 12/31</span>
+                    <span th:unless="${voucher.validFrom} and ${voucher.validUntil}">Always</span>
+                </td>
+                <td>
+                    <span th:text="${voucher.usageCount}">0</span>/
+                    <span th:text="${voucher.usageLimit ?: '∞'}">∞</span>
+                </td>
+                <td>
+                    <span th:if="${voucher.active}" class="badge bg-success">Active</span>
+                    <span th:unless="${voucher.active}" class="badge bg-secondary">Inactive</span>
+                </td>
+                <td>
+                    <a th:href="@{/vouchers/edit/{id}(id=${voucher.id})}"
+                       class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form th:action="@{/vouchers/delete/{id}(id=${voucher.id})}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Delete voucher ${voucher.code}?')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div th:replace="~{fragments :: footer}"></div>
+</div>
+</body>
+</html>

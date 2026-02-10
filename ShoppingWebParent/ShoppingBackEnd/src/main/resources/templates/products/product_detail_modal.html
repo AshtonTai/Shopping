@@ -27,19 +27,12 @@
 	</ul>
 
 	<div class="tab-content p-3">
-		<!-- Overview Tab -->
+		<!-- Overview Tab - CUSTOMER VIEW ONLY -->
 		<div class="tab-pane active" id="overview" role="tabpanel">
 			<div class="form-group row mb-2">
 				<label class="col-sm-3 col-form-label">Product Name:</label>
 				<div class="col-sm-9">
 					<input type="text" class="form-control" th:value="${product.name}" readonly />
-				</div>
-			</div>
-
-			<div class="form-group row mb-2">
-				<label class="col-sm-3 col-form-label">Alias:</label>
-				<div class="col-sm-9">
-					<input type="text" class="form-control" th:value="${product.alias}" readonly />
 				</div>
 			</div>
 
@@ -58,25 +51,11 @@
 			</div>
 
 			<div class="form-group row mb-2">
-				<label class="col-sm-3 col-form-label">Enabled:</label>
-				<div class="col-sm-9">
-					<input type="checkbox" th:checked="${product.enabled}" disabled />
-				</div>
-			</div>
-
-			<div class="form-group row mb-2">
 				<label class="col-sm-3 col-form-label">In-Stock:</label>
 				<div class="col-sm-9">
 					<input type="text" class="form-control"
 						   th:value="${product.inStock != null ? product.inStock : '0'}"
 						   readonly />
-				</div>
-			</div>
-
-			<div class="form-group row mb-2">
-				<label class="col-sm-3 col-form-label">Cost:</label>
-				<div class="col-sm-9">
-					<input type="text" class="form-control" th:value="${product.cost}" readonly />
 				</div>
 			</div>
 
@@ -91,13 +70,6 @@
 				<label class="col-sm-3 col-form-label">Discount (%):</label>
 				<div class="col-sm-9">
 					<input type="text" class="form-control" th:value="${product.discountPercent}" readonly />
-				</div>
-			</div>
-
-			<div class="form-group row mb-2">
-				<label class="col-sm-3 col-form-label">Updated Time:</label>
-				<div class="col-sm-9">
-					<span th:text="${#dates.format(product.updatedTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
 				</div>
 			</div>
 

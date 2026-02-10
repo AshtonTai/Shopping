@@ -43,6 +43,7 @@
 					<div class="dropdown-menu">
 						<a class="dropdown-item" th:href="@{/products/new}" sec:authorize="hasAnyAuthority('Admin', 'Editor')">Create New</a>
 						<a class="dropdown-item" th:href="@{/products}">View All</a>
+						<a class="dropdown-item" th:href="@{/vouchers}" sec:authorize="hasAnyAuthority('Admin', 'Editor')">Vouchers</a>
 						<a class="dropdown-item" th:href="@{/reviews/public}">Reviews</a>
 						<a class="dropdown-item" th:href="@{/reviews}" sec:authorize="hasAuthority('Admin')">Manage Reviews</a>
 					</div>
