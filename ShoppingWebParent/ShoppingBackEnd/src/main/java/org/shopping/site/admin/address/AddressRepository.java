@@ -7,9 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AddressRepository extends JpaRepository<Address, Integer> {
     List<Address> findByUser_Id(Integer userId);
+    Optional<Address> findByIdAndUser_Id(Integer id, Integer userId);
 
     @Modifying
     @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId")

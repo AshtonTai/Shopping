@@ -62,7 +62,7 @@
 				<th:block sec:authorize="hasAnyAuthority('Admin', 'Editor')">
 					<th>Enabled</th>
 				</th:block>
-				<th></th>
+				<th sec:authorize="hasAnyAuthority('Admin', 'Editor','Customer')"></th>
 			</tr>
 			</thead>
 			<tbody>
@@ -114,7 +114,7 @@
 					</div>
 
 					<!-- Staff actions -->
-					<div sec:authorize="hasAnyAuthority('Admin','Editor','Shipper')">
+					<div sec:authorize="hasAnyAuthority('Admin','Editor')">
 						<!-- Edit for all staff -->
 						<a class="fas fa-edit fa-lg text-warning me-2"
 						   th:href="@{/products/edit/{id}(id=${product.id})}"

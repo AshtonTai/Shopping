@@ -25,7 +25,6 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Controller
 public class CheckoutController extends BaseController {
@@ -55,17 +54,17 @@ public class CheckoutController extends BaseController {
     @Autowired
     private VoucherService voucherService;
 
+    // --- GET /checkout ---
     @GetMapping("/checkout")
     public String showCheckout(Model model, Authentication auth) {
         Integer userId = getCurrentUserId(auth);
-
-        if (!userService.isCustomer(userId)) {
+        if (userId == null || !userService.isCustomer(userId)) {
             return "redirect:/";
         }
 
         List<CartItem> cartItems = cartService.getCartItems(userId);
         if (cartItems == null || cartItems.isEmpty()) {
-            return "redirect:/cart/cart";
+            return "redirect:/cart";
         }
 
         int totalQuantity = cartItems.stream()
@@ -90,7 +89,6 @@ public class CheckoutController extends BaseController {
             BigDecimal itemTotal = BigDecimal.valueOf(finalPrice).multiply(BigDecimal.valueOf(item.getQuantity()));
             cartTotal = cartTotal.add(itemTotal);
 
-            // Calculate how much was saved on this item due to product discount
             BigDecimal originalItemTotal = BigDecimal.valueOf(originalPrice).multiply(BigDecimal.valueOf(item.getQuantity()));
             BigDecimal itemDiscount = originalItemTotal.subtract(itemTotal);
             totalProductDiscount = totalProductDiscount.add(itemDiscount);
@@ -99,9 +97,11 @@ public class CheckoutController extends BaseController {
         BigDecimal shippingFee = BigDecimal.ZERO;
         if (!addresses.isEmpty()) {
             Address addr = addresses.get(0);
-            ShippingRate rateObj = shippingRateRepo.findByCountryAndState(addr.getCountry(), addr.getState());
-            if (rateObj != null) {
-                shippingFee = rateObj.getRate();
+            if (addr.getCountry() != null && addr.getState() != null) {
+                ShippingRate rateObj = shippingRateRepo.findByCountryAndState(addr.getCountry(), addr.getState());
+                if (rateObj != null) {
+                    shippingFee = rateObj.getRate();
+                }
             }
         }
 
@@ -112,8 +112,8 @@ public class CheckoutController extends BaseController {
         model.addAttribute("countries", countries);
         model.addAttribute("orderRequest", new OrderRequest());
         model.addAttribute("totalQuantity", totalQuantity);
-        model.addAttribute("cartTotal", cartTotal); // Final price after product discounts
-        model.addAttribute("totalProductDiscount", totalProductDiscount); // 👈 New!
+        model.addAttribute("cartTotal", cartTotal);
+        model.addAttribute("totalProductDiscount", totalProductDiscount);
         model.addAttribute("shippingFee", shippingFee);
         model.addAttribute("grandTotal", grandTotal);
         if (!addresses.isEmpty()) {
@@ -123,19 +123,20 @@ public class CheckoutController extends BaseController {
         return "checkout";
     }
 
+    // --- POST /checkout (place order) ---
     @PostMapping("/checkout")
     public String processOrder(@ModelAttribute OrderRequest request,
                                @RequestParam(required = false) String voucherCode,
                                Authentication auth,
                                RedirectAttributes redirectAttributes) {
         Integer userId = getCurrentUserId(auth);
-        if (!userService.isCustomer(userId)) {
+        if (userId == null || !userService.isCustomer(userId)) {
             return "redirect:/";
         }
 
         try {
-            Address address = addressRepo.findById(request.getAddressId())
-                    .orElseThrow(() -> new RuntimeException("Address not found"));
+            Address address = addressRepo.findByIdAndUser_Id(request.getAddressId(), userId)
+                    .orElseThrow(() -> new RuntimeException("Invalid shipping address"));
 
             List<CartItem> cartItems = cartService.getCartItems(userId);
             if (cartItems.isEmpty()) {
@@ -148,7 +149,6 @@ public class CheckoutController extends BaseController {
             }
 
             Order savedOrder = orderService.createOrder(userId, address.getId(), request.getPaymentMethod(), cartItems, appliedVoucher);
-
             return "redirect:/orders/success/" + savedOrder.getId();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -156,6 +156,7 @@ public class CheckoutController extends BaseController {
         }
     }
 
+    // --- GET /orders/success/{orderId} ---
     @GetMapping("/orders/success/{orderId}")
     public String showOrderSuccess(@PathVariable Integer orderId, Model model) {
         Order order = orderService.findById(orderId);
@@ -166,44 +167,42 @@ public class CheckoutController extends BaseController {
         return "orders/success";
     }
 
+    // --- GET /api/shipping-fee ---
     @GetMapping("/api/shipping-fee")
     @ResponseBody
-    public ResponseEntity<BigDecimal> getShippingFee(
+    public ResponseEntity<Map<String, Object>> getShippingFee(
             @RequestParam(required = false) Integer addressId,
             Authentication auth) {
 
-        if (auth == null || !auth.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(BigDecimal.ZERO);
-        }
-
         Integer userId = getCurrentUserId(auth);
         if (userId == null || !userService.isCustomer(userId)) {
-            return ResponseEntity.badRequest().body(BigDecimal.ZERO);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("shippingFee", 0.0));
         }
 
         if (addressId == null || addressId <= 0) {
-            return ResponseEntity.ok(BigDecimal.ZERO);
+            return ResponseEntity.ok(Map.of("shippingFee", 0.0));
         }
 
         try {
-            Address address = addressRepo.findById(addressId)
+            Address address = addressRepo.findByIdAndUser_Id(addressId, userId)
                     .orElseThrow(() -> new IllegalArgumentException("Invalid address"));
 
-            if (!address.getUser().getId().equals(userId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(BigDecimal.ZERO);
+            BigDecimal rateValue = BigDecimal.ZERO;
+            if (address.getCountry() != null && address.getState() != null) {
+                ShippingRate rate = shippingRateRepo.findByCountryAndState(address.getCountry(), address.getState());
+                if (rate != null) {
+                    rateValue = rate.getRate();
+                }
             }
 
-            ShippingRate rate = shippingRateRepo.findByCountryAndState(
-                    address.getCountry(),
-                    address.getState()
-            );
-
-            return ResponseEntity.ok(rate != null ? rate.getRate() : BigDecimal.ZERO);
+            return ResponseEntity.ok(Map.of("shippingFee", rateValue.doubleValue()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(BigDecimal.ZERO);
+            return ResponseEntity.badRequest().body(Map.of("shippingFee", 0.0));
         }
     }
 
+    // --- POST /api/validate-voucher ---
     @PostMapping("/api/validate-voucher")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> validateVoucher(
@@ -211,33 +210,37 @@ public class CheckoutController extends BaseController {
             Authentication auth) {
 
         try {
+            Integer userId = getCurrentUserId(auth);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("valid", false, "message", "Authentication required"));
+            }
+
             String code = (String) request.get("code");
             Integer addressId = ((Number) request.get("addressId")).intValue();
-            Integer userId = getCurrentUserId(auth);
 
             if (code == null || code.trim().isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("valid", false, "message", "Voucher code is required"));
             }
 
+            Address address = addressRepo.findByIdAndUser_Id(addressId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid shipping address"));
+
             Voucher voucher = voucherService.validateVoucher(code.trim(), userId);
-
             List<CartItem> cartItems = cartService.getCartItems(userId);
-
             BigDecimal cartTotal = priceService.calculateCartSubtotal(cartItems);
-
             BigDecimal discountAmount = voucherService.calculateDiscount(voucher, cartTotal);
             BigDecimal discountedSubtotal = cartTotal.subtract(discountAmount);
 
-            Address address = addressRepo.findById(addressId)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid address"));
-
             BigDecimal shippingCost = BigDecimal.ZERO;
             if (voucher.getType() != VoucherType.FREE_SHIPPING) {
-                ShippingRate rate = shippingRateRepo.findByCountryAndState(
-                        address.getCountry(), address.getState()
-                );
-                shippingCost = rate != null ? rate.getRate() : BigDecimal.ZERO;
+                if (address.getCountry() != null && address.getState() != null) {
+                    ShippingRate rate = shippingRateRepo.findByCountryAndState(address.getCountry(), address.getState());
+                    if (rate != null) {
+                        shippingCost = rate.getRate();
+                    }
+                }
             }
 
             BigDecimal grandTotal = discountedSubtotal.add(shippingCost);
@@ -252,10 +255,11 @@ public class CheckoutController extends BaseController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("valid", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            System.err.println("Voucher validation error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "valid", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Invalid voucher"
+            ));
         }
     }
 }

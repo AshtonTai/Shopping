@@ -20,7 +20,7 @@ public class ShoppingUserDetails implements UserDetails {
     }
 
     public Integer getId() {
-        return user.getId();
+        return user.getId(); // assuming 'user' is your entity
     }
 
     @Override

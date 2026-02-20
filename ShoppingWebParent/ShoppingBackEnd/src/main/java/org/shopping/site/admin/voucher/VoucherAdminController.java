@@ -19,7 +19,6 @@ public class VoucherAdminController {
     @Autowired private VoucherService voucherService;
     @Autowired private VoucherRepository voucherRepo;
 
-    // GET /vouchers → show list
     @GetMapping
     public String listVouchers(Model model) {
         model.addAttribute("vouchers", voucherRepo.findAll());
@@ -27,7 +26,6 @@ public class VoucherAdminController {
         return "vouchers/list";
     }
 
-    // GET /vouchers/new → show form
     @GetMapping("/new")
     public String newVoucher(Model model) {
         model.addAttribute("voucher", new Voucher());
@@ -35,24 +33,36 @@ public class VoucherAdminController {
         return "vouchers/form";
     }
 
-    // POST /vouchers → save
     @PostMapping
     public String saveVoucher(@Valid Voucher voucher, BindingResult bindingResult,
-                              RedirectAttributes redirectAttributes) {
+                              RedirectAttributes redirectAttributes, Model model) {
+
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("error", "Please correct the errors below");
-            return "redirect:/vouchers/new";
+            model.addAttribute("voucherTypes", VoucherType.values());
+            return "vouchers/form"; // Stay on form with errors (no redirect)
         }
 
-        if (voucherRepo.existsByCode(voucher.getCode())) {
-            redirectAttributes.addFlashAttribute("error", "Voucher code already exists");
-            return "redirect:/vouchers/new";
+        // Check duplicate code — but allow current voucher to keep its own code
+        if (voucherRepo.existsByCodeAndIdNot(voucher.getCode(), voucher.getId())) {
+            model.addAttribute("voucherTypes", VoucherType.values());
+            model.addAttribute("error", "Voucher code already exists");
+            return "vouchers/form";
         }
 
-        voucher.setUsageCount(0);
-        voucherRepo.save(voucher);
+        voucher.setUsageCount(voucher.getUsageCount() == null ? 0 : voucher.getUsageCount());
+        voucherRepo.save(voucher); // JPA handles insert or update automatically
         redirectAttributes.addFlashAttribute("message", "Voucher saved successfully!");
         return "redirect:/vouchers";
+    }
+
+    @GetMapping("/edit/{id}")
+    public String editVoucher(@PathVariable Integer id, Model model) {
+        Voucher voucher = voucherRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid voucher ID: " + id));
+
+        model.addAttribute("voucher", voucher);
+        model.addAttribute("voucherTypes", VoucherType.values());
+        return "vouchers/form"; // Reuse the same form for create/edit
     }
 
     @PostMapping("/delete/{id}")

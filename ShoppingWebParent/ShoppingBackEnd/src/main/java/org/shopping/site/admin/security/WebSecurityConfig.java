@@ -44,6 +44,9 @@ public class WebSecurityConfig {
                         // === CUSTOMER ACTIONS (logged-in users only) ===
                         .requestMatchers("/reviews/submit", "/reviews/delete/**", "/cart/**", "/checkout/**", "/orders/**", "/addresses/**").authenticated()
 
+                        .requestMatchers("/api/validate-voucher").authenticated()
+                        .requestMatchers("/api/**").authenticated()
+
                         // === SHIPPER DASHBOARD ===
                         .requestMatchers("/shipper/**").hasAuthority("Shipper")
 

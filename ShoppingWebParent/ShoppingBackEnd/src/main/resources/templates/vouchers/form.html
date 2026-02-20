@@ -11,15 +11,16 @@
                 <span th:if="${voucher.id == null}">Create Voucher</span>
                 <span th:unless="${voucher.id == null}">Edit Voucher</span>
             </h2>
-            <a th:href="@{/admin/vouchers}" class="btn btn-secondary">
+            <a th:href="@{/vouchers}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Back to List
             </a>
         </div>
 
         <div class="card">
             <div class="card-body">
-                <form th:object="${voucher}" th:action="@{/admin/vouchers/save}" method="post">
+                <form th:action="@{/vouchers}" th:object="${voucher}" method="post">
                     <input type="hidden" th:field="*{id}" />
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
                     <div class="row">
                         <div class="col-md-6 mb-3">

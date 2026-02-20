@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments :: page_head('Checkout - Shopme', 'none')}" />
 <body>
 <div class="container-fluid">
@@ -63,7 +63,6 @@
                             </td>
                         </tr>
 
-                        <!-- Subtotal = final price after product discounts -->
                         <tr class="table-active">
                             <td colspan="2" class="text-end fw-bold">Subtotal</td>
                             <td id="subtotal" class="text-end fw-bold">
@@ -71,7 +70,6 @@
                             </td>
                         </tr>
 
-                        <!-- Product Discount (from admin-set discounts) -->
                         <tr class="table-warning">
                             <td colspan="2" class="text-end fw-bold">Product Discounts</td>
                             <td id="product-discount" class="text-end fw-bold text-success">
@@ -79,13 +77,11 @@
                             </td>
                         </tr>
 
-                        <!-- Voucher Discount (will be updated via JS) -->
                         <tr class="table-info">
                             <td colspan="2" class="text-end fw-bold">Voucher Discount</td>
                             <td id="voucher-discount" class="text-end fw-bold text-success">$0.00</td>
                         </tr>
 
-                        <!-- Total Discount = Product + Voucher -->
                         <tr class="table-success">
                             <td colspan="2" class="text-end fw-bold fs-5">Total Savings</td>
                             <td id="total-discount" class="text-end fw-bold fs-5 text-success">$0.00</td>
@@ -111,22 +107,212 @@
                 </div>
             </div>
 
-            <!-- Voucher Section -->
-            <div class="card mb-4">
-                <div class="card-header bg-warning text-white">
-                    <h4 class="mb-0">🎟️ Voucher Code</h4>
-                </div>
-                <div class="card-body">
-                    <div class="input-group">
-                        <input type="text" id="voucherCode" class="form-control"
-                               placeholder="Enter voucher code (optional)" maxlength="20">
-                        <button type="button" id="applyVoucherBtn" class="btn btn-success">
-                            Apply
-                        </button>
+            <!-- Voucher Section (ONLY for authenticated users) -->
+            <div sec:authorize="isAuthenticated()">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-white">
+                        <h4 class="mb-0">🎟️ Voucher Code</h4>
                     </div>
-                    <small class="text-muted">Apply discount or free shipping</small>
-                    <div id="voucherMessage"></div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input type="text" id="voucherCode" class="form-control"
+                                   placeholder="Enter voucher code (optional)" maxlength="20">
+                            <button type="button" id="applyVoucherBtn" class="btn btn-success">
+                                Apply
+                            </button>
+                        </div>
+                        <small class="text-muted">Apply discount or free shipping</small>
+                        <div id="voucherMessage"></div>
+                    </div>
                 </div>
+
+                <script th:inline="javascript">
+                    /*<![CDATA[*/
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const addressSelect = document.querySelector('[name="addressId"]');
+                        const voucherInput = document.getElementById('voucherCode');
+                        const applyVoucherBtn = document.getElementById('applyVoucherBtn');
+                        const shippingFeeElem = document.getElementById('shipping-fee');
+                        const grandTotalElem = document.getElementById('grand-total');
+                        const subtotalElem = document.getElementById('subtotal');
+                        const productDiscountElem = document.getElementById('product-discount');
+                        const voucherDiscountElem = document.getElementById('voucher-discount');
+                        const totalDiscountElem = document.getElementById('total-discount');
+                        const voucherMessageElem = document.getElementById('voucherMessage');
+
+                        const originalCartTotal = /*[[${cartTotal}]]*/ 0;
+                        const originalProductDiscount = /*[[${totalProductDiscount}]]*/ 0;
+                        const originalShippingFee = /*[[${shippingFee}]]*/ 0;
+
+                        let currentCartTotal = originalCartTotal;
+                        let currentVoucherDiscount = 0;
+                        let currentShippingFee = originalShippingFee;
+                        let appliedVoucherCode = '';
+
+                        const baseUrl = /*[[@{/}]]*/ '';
+                        const csrfToken = /*[[${_csrf?.token}]]*/ null;
+                        const csrfHeaderName = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
+
+                        // Initialize UI on page load
+                        updateTotals();
+
+                        function updateTotals() {
+                            const totalDiscount = originalProductDiscount + currentVoucherDiscount;
+                            const grandTotal = currentCartTotal + currentShippingFee;
+
+                            if (subtotalElem) subtotalElem.textContent = formatCurrency(currentCartTotal);
+                            if (productDiscountElem) productDiscountElem.textContent = formatCurrency(originalProductDiscount);
+                            if (voucherDiscountElem) voucherDiscountElem.textContent = formatCurrency(currentVoucherDiscount);
+                            if (totalDiscountElem) totalDiscountElem.textContent = formatCurrency(totalDiscount);
+                            if (shippingFeeElem) shippingFeeElem.textContent = formatCurrency(currentShippingFee);
+                            if (grandTotalElem) grandTotalElem.textContent = formatCurrency(grandTotal);
+                        }
+
+                        function resetToOriginalTotals() {
+                            currentCartTotal = originalCartTotal;
+                            currentVoucherDiscount = 0;
+                            currentShippingFee = originalShippingFee;
+                            appliedVoucherCode = '';
+                            if (voucherInput) voucherInput.value = '';
+                            updateTotals();
+                            if (voucherMessageElem) voucherMessageElem.innerHTML = '';
+                        }
+
+                        // Handle address change
+                        if (addressSelect) {
+                            addressSelect.addEventListener('change', function() {
+                                const addressId = addressSelect.value;
+                                if (!addressId || isNaN(addressId)) {
+                                    resetToOriginalTotals();
+                                    return;
+                                }
+
+                                fetch(baseUrl + 'api/shipping-fee?addressId=' + encodeURIComponent(addressId), {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    credentials: 'same-origin'
+                                })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Failed to fetch shipping fee');
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(data => {
+                                        const fee = (typeof data.shippingFee === 'number') ? data.shippingFee : 0;
+                                        currentShippingFee = fee;
+
+                                        if (appliedVoucherCode) {
+                                            validateAndApplyVoucher(appliedVoucherCode, addressId);
+                                        } else {
+                                            updateTotals();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Shipping fee error:', error);
+                                        resetToOriginalTotals();
+                                    });
+                            });
+                        }
+
+                        // Apply voucher button
+                        if (applyVoucherBtn) {
+                            applyVoucherBtn.addEventListener('click', function() {
+                                const voucherCode = voucherInput ? voucherInput.value.trim() : '';
+                                if (!voucherCode) {
+                                    showVoucherMessage('Please enter a voucher code', 'danger');
+                                    return;
+                                }
+
+                                const addressId = addressSelect?.value;
+                                if (!addressId) {
+                                    showVoucherMessage('Please select a shipping address first', 'warning');
+                                    return;
+                                }
+
+                                validateAndApplyVoucher(voucherCode, addressId);
+                            });
+                        }
+
+                        function validateAndApplyVoucher(voucherCode, addressId) {
+                            const headers = {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            };
+                            if (csrfToken && csrfHeaderName) {
+                                headers[csrfHeaderName] = csrfToken;
+                            }
+
+                            fetch(baseUrl + 'api/validate-voucher', {
+                                method: 'POST',
+                                headers: headers,
+                                credentials: 'same-origin',
+                                body: JSON.stringify({
+                                    code: voucherCode,
+                                    addressId: parseInt(addressId)
+                                })
+                            })
+                                .then(response => {
+                                    const contentType = response.headers.get('content-type');
+                                    if (!response.ok) {
+                                        if (contentType && !contentType.includes('application/json')) {
+                                            throw new Error('Session expired. Please log in again.');
+                                        }
+                                        return response.json().then(err => {
+                                            throw new Error(err.message || 'Invalid voucher code');
+                                        }).catch(() => {
+                                            throw new Error('Invalid voucher code');
+                                        });
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    if (data.valid) {
+                                        currentCartTotal = data.cartTotal;
+                                        currentVoucherDiscount = data.discountAmount;
+                                        currentShippingFee = data.shippingCost;
+                                        appliedVoucherCode = voucherCode;
+                                        updateTotals();
+                                        showVoucherMessage('Voucher applied successfully!', 'success');
+                                    } else {
+                                        showVoucherMessage(data.message || 'Invalid voucher code', 'danger');
+                                        appliedVoucherCode = '';
+                                    }
+                                })
+                                .catch(error => {
+                                    const message = error?.message || 'Failed to validate voucher. Please try again.';
+                                    showVoucherMessage(message, 'danger');
+                                    appliedVoucherCode = '';
+                                });
+                        }
+
+                        function showVoucherMessage(message, type) {
+                            if (voucherMessageElem) {
+                                voucherMessageElem.innerHTML = `<div class="alert alert-${type} mt-2 mb-0">${message}</div>`;
+                                if (type === 'success') {
+                                    setTimeout(() => {
+                                        if (voucherMessageElem) voucherMessageElem.innerHTML = '';
+                                    }, 3000);
+                                }
+                            }
+                        }
+
+                        function formatCurrency(value) {
+                            return new Intl.NumberFormat('ms-MY', {
+                                style: 'currency',
+                                currency: 'MYR',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(value);
+                        }
+                    });
+
+                    /*]]>*/
+                </script>
             </div>
 
             <!-- Payment Method -->
@@ -138,7 +324,7 @@
                     <select th:field="*{paymentMethod}" class="form-select form-select-lg" required>
                         <option value="">── Select payment method ──</option>
                         <option value="CASH_ON_DELIVERY">💵 Cash on Delivery</option>
-                        <option value="CASH_ON_DELIVERY">💳 Online Banking</option>
+                        <option value="ONLINE_BANKING">💳 Online Banking</option>
                     </select>
                 </div>
             </div>
@@ -157,164 +343,5 @@
 
     <div th:replace="~{fragments :: footer}"></div>
 </div>
-
-<script th:inline="javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        const addressSelect = document.querySelector('[name="addressId"]');
-        const voucherInput = document.getElementById('voucherCode');
-        const applyVoucherBtn = document.getElementById('applyVoucherBtn');
-        const shippingFeeElem = document.getElementById('shipping-fee');
-        const grandTotalElem = document.getElementById('grand-total');
-        const subtotalElem = document.getElementById('subtotal');
-        const productDiscountElem = document.getElementById('product-discount');
-        const voucherDiscountElem = document.getElementById('voucher-discount');
-        const totalDiscountElem = document.getElementById('total-discount');
-        const voucherMessageElem = document.getElementById('voucherMessage');
-
-        // Store original values from server
-        const originalCartTotal = /*[[${cartTotal}]]*/ 0;
-        const originalProductDiscount = /*[[${totalProductDiscount}]]*/ 0;
-        const originalShippingFee = /*[[${shippingFee}]]*/ 0;
-
-        let currentCartTotal = originalCartTotal;
-        let currentVoucherDiscount = 0;
-        let currentShippingFee = originalShippingFee;
-        let appliedVoucherCode = '';
-
-        const baseUrl = /*[[ @{/} ]]*/ '/';
-
-        // Initialize totals
-        updateTotals();
-
-        function updateTotals() {
-            const totalDiscount = originalProductDiscount + currentVoucherDiscount;
-            const grandTotal = currentCartTotal + currentShippingFee;
-
-            if (subtotalElem) subtotalElem.textContent = formatCurrency(currentCartTotal);
-            if (productDiscountElem) productDiscountElem.textContent = formatCurrency(originalProductDiscount);
-            if (voucherDiscountElem) voucherDiscountElem.textContent = formatCurrency(currentVoucherDiscount);
-            if (totalDiscountElem) totalDiscountElem.textContent = formatCurrency(totalDiscount);
-            if (shippingFeeElem) shippingFeeElem.textContent = formatCurrency(currentShippingFee);
-            if (grandTotalElem) grandTotalElem.textContent = formatCurrency(grandTotal);
-        }
-
-        function resetToOriginalTotals() {
-            currentCartTotal = originalCartTotal;
-            currentVoucherDiscount = 0;
-            currentShippingFee = originalShippingFee;
-            appliedVoucherCode = '';
-            if (voucherInput) voucherInput.value = '';
-            updateTotals();
-            if (voucherMessageElem) voucherMessageElem.innerHTML = '';
-        }
-
-        // Handle address change
-        if (addressSelect) {
-            addressSelect.addEventListener('change', function() {
-                const addressId = addressSelect.value;
-                if (!addressId || isNaN(addressId)) {
-                    resetToOriginalTotals();
-                    return;
-                }
-
-                fetch(baseUrl + 'api/shipping-fee?addressId=' + encodeURIComponent(addressId), {
-                    headers: { 'Accept': 'application/json' },
-                    credentials: 'same-origin'
-                })
-                    .then(response => response.ok ? response.json() : Promise.reject())
-                    .then(shippingFee => {
-                        const fee = (typeof shippingFee === 'number' && !isNaN(shippingFee)) ? shippingFee : 0;
-                        currentShippingFee = fee;
-
-                        // Re-apply voucher if exists (with new address)
-                        if (appliedVoucherCode) {
-                            validateAndApplyVoucher(appliedVoucherCode, addressId);
-                        } else {
-                            updateTotals();
-                        }
-                    })
-                    .catch(() => {
-                        resetToOriginalTotals();
-                    });
-            });
-        }
-
-        // Handle voucher application
-        if (applyVoucherBtn) {
-            applyVoucherBtn.addEventListener('click', function() {
-                const voucherCode = voucherInput ? voucherInput.value.trim() : '';
-                if (!voucherCode) {
-                    showVoucherMessage('Please enter a voucher code', 'danger');
-                    return;
-                }
-
-                const addressId = addressSelect?.value;
-                if (!addressId) {
-                    showVoucherMessage('Please select a shipping address first', 'warning');
-                    return;
-                }
-
-                validateAndApplyVoucher(voucherCode, addressId);
-            });
-        }
-
-        function validateAndApplyVoucher(voucherCode, addressId) {
-            fetch(baseUrl + 'api/validate-voucher', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    code: voucherCode,
-                    addressId: parseInt(addressId)
-                })
-            })
-                .then(response => {
-                    if (!response.ok) return response.json().then(err => Promise.reject(err));
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.valid) {
-                        currentCartTotal = data.cartTotal; // Already includes product discounts
-                        currentVoucherDiscount = data.discountAmount;
-                        currentShippingFee = data.shippingCost;
-                        appliedVoucherCode = voucherCode;
-                        updateTotals();
-                        showVoucherMessage('Voucher applied successfully!', 'success');
-                    } else {
-                        showVoucherMessage(data.message || 'Invalid voucher code', 'danger');
-                        appliedVoucherCode = '';
-                    }
-                })
-                .catch(error => {
-                    const message = (error?.message) || 'Invalid voucher code';
-                    showVoucherMessage(message, 'danger');
-                    appliedVoucherCode = '';
-                });
-        }
-
-        function showVoucherMessage(message, type) {
-            if (voucherMessageElem) {
-                voucherMessageElem.innerHTML = `<div class="alert alert-${type} mt-2 mb-0">${message}</div>`;
-                if (type === 'success') {
-                    setTimeout(() => {
-                        if (voucherMessageElem) voucherMessageElem.innerHTML = '';
-                    }, 3000);
-                }
-            }
-        }
-
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('ms-MY', {
-                style: 'currency',
-                currency: 'MYR',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(value);
-        }
-    });
-</script>
 </body>
 </html>
