@@ -4,8 +4,6 @@
 <head th:replace="~{fragments :: page_head('Order Details - Shipper', 'none')}" />
 <body>
 <div class="container-fluid">
-    <div th:replace="~{navigation :: menu}"></div>
-
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-box me-2"></i> Order #[[${order.orderNumber}]]</h2>
@@ -37,20 +35,24 @@
                         <h5>Order Details</h5>
                         <p>
                             <strong>Status:</strong>
-                            <span class="badge bg-secondary" th:text="${order.status}">PENDING</span><br/>
+                            <span class="badge"
+                                  th:classappend="${order.status == 'DELIVERED' ? 'bg-success' :
+                                                 order.status == 'SHIPPED' ? 'bg-info' :
+                                                 order.status == 'CONFIRMED' ? 'bg-warning' : 'bg-secondary'}"
+                                  th:text="${order.status}">PENDING</span><br/>
                             <strong>Order Date:</strong>
                             <span th:text="${#temporals.format(order.orderTime, 'dd MMM yyyy HH:mm')}">Date</span><br/>
                             <strong>Payment Method:</strong>
                             <span th:text="${order.paymentMethod}">CASH_ON_DELIVERY</span><br/>
-                            <strong>Total:</strong>
-                            <span th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</span>
+                            <strong>Total Paid:</strong>
+                            <span th:text="${#numbers.formatCurrency(order.totalAmount)}" class="text-danger fw-bold">RM0.00</span>
                         </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Order Items -->
+        <!-- Order Items with Detailed Pricing -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
                 <h4 class="mb-0">📦 Order Items</h4>
@@ -60,30 +62,85 @@
                     <thead>
                     <tr>
                         <th>Product</th>
-                        <th class="text-center">Quantity</th>
-                        <th class="text-end">Price</th>
-                        <th class="text-end">Total</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Subtotal</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="detail : ${order.orderDetails}">
                         <td>
-                            <strong th:text="${detail.product.name}">Product</strong>
+                            <strong th:text="${detail.product.name}">Product Name</strong>
+
+                            <!-- Price display: Show original + discounted -->
+                            <div th:if="${detail.originalUnitPrice != null && detail.originalUnitPrice.compareTo(detail.unitPrice) > 0}"
+                                 class="price-with-discount mt-1">
+                                <span class="original-price text-muted small">
+                                    <del th:text="${#numbers.formatCurrency(detail.originalUnitPrice)}">$0.00</del>
+                                </span>
+                                <span class="discounted-price text-success fw-bold ms-1"
+                                      th:text="${#numbers.formatCurrency(detail.unitPrice)}">$0.00</span>
+                            </div>
+
+                            <!-- No discount: show single price -->
+                            <div th:unless="${detail.originalUnitPrice != null && detail.originalUnitPrice.compareTo(detail.unitPrice) > 0}">
+                                <span class="small" th:text="${#numbers.formatCurrency(detail.unitPrice)}">$0.00</span>
+                            </div>
+
+                            <!-- Savings badge -->
+                            <div th:if="${detail.originalUnitPrice != null && detail.originalUnitPrice.compareTo(detail.unitPrice) > 0}"
+                                 class="text-success small mt-1">
+                                Saved <span th:text="${#numbers.formatCurrency(
+                                    detail.originalUnitPrice.subtract(detail.unitPrice).multiply(T(java.math.BigDecimal).valueOf(detail.quantity.longValue()))
+                                )}">$0.00</span>
+                            </div>
                         </td>
                         <td class="text-center" th:text="${detail.quantity}">1</td>
-                        <td class="text-end" th:text="${#numbers.formatCurrency(detail.unitPrice)}">$0.00</td>
-                        <td class="text-end" th:text="${#numbers.formatCurrency(detail.subtotal)}">$0.00</td>
-                    </tr>
-                    <tr class="table-active">
-                        <td colspan="3" class="text-end fw-bold">Shipping Cost</td>
-                        <td class="text-end fw-bold" th:text="${#numbers.formatCurrency(order.shippingCost)}">$0.00</td>
-                    </tr>
-                    <tr class="table-light">
-                        <td colspan="3" class="text-end fw-bold fs-5">Grand Total</td>
-                        <td class="text-end fw-bold fs-5" th:text="${#numbers.formatCurrency(order.totalAmount)}">$0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatCurrency(detail.unitPrice)}">RM0.00</td>
+                        <td class="text-end fw-bold" th:text="${#numbers.formatCurrency(detail.subtotal)}">RM0.00</td>
                     </tr>
                     </tbody>
                 </table>
+
+                <!-- Financial Breakdown -->
+                <div class="border-top pt-3 mt-3">
+                    <table class="table table-borderless">
+                        <tbody>
+                        <tr>
+                            <td class="text-end text-muted">Original Subtotal</td>
+                            <td class="text-end fw-bold" th:text="${#numbers.formatCurrency(originalSubtotal)}">RM0.00</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td class="text-end fw-bold">Product Discounts</td>
+                            <td class="text-end fw-bold text-success" th:text="'- ' + ${#numbers.formatCurrency(productDiscount)}">-RM0.00</td>
+                        </tr>
+                        <tr class="table-active">
+                            <td class="text-end fw-bold fs-5">Subtotal</td>
+                            <td class="text-end fw-bold fs-5" th:text="${#numbers.formatCurrency(originalSubtotal.subtract(productDiscount))}">RM0.00</td>
+                        </tr>
+                        <tr th:if="${voucherDiscount.compareTo(T(java.math.BigDecimal).ZERO) > 0}" class="table-info">
+                            <td class="text-end fw-bold fs-5">Voucher Discount
+                                <span th:if="${order.appliedVoucher?.code != null}" class="badge bg-success ms-2" th:text="${order.appliedVoucher.code}">CODE</span>
+                            </td>
+                            <td class="text-end fw-bold fs-5 text-success" th:text="'- ' + ${#numbers.formatCurrency(voucherDiscount)}">-RM0.00</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td class="text-end fw-bold fs-5">Shipping Fee</td>
+                            <td class="text-end fw-bold fs-5"
+                                th:classappend="${isFreeShipping ? 'text-success' : ''}"
+                                th:text="${isFreeShipping ? 'Free' : #numbers.formatCurrency(shippingCost)}">RM0.00</td>
+                        </tr>
+                        <tr class="table-success">
+                            <td class="text-end fw-bold fs-5">Total Savings</td>
+                            <td class="text-end fw-bold fs-5 text-success" th:text="'- ' + ${#numbers.formatCurrency(productDiscount.add(voucherDiscount))}">RM0.00</td>
+                        </tr>
+                        <tr class="table-light border-top">
+                            <td class="text-end fw-bold fs-4">Grand Total</td>
+                            <td class="text-end fw-bold fs-4 text-danger" th:text="${#numbers.formatCurrency(grandTotal)}">RM0.00</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -137,5 +194,11 @@
 
     <div th:replace="~{fragments :: footer}"></div>
 </div>
+
+<style>
+    .price-with-discount { display: flex; align-items: center; gap: 0.25rem; }
+    .original-price del { font-size: 0.875rem; opacity: 0.7; }
+    .discounted-price { font-size: 1rem; }
+</style>
 </body>
 </html>

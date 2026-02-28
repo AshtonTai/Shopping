@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 // OrderRepository.java
 public interface OrderRepository extends JpaRepository<Order, Integer> {
@@ -18,6 +19,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId ORDER BY o.orderTime DESC")
     Page<Order> findByCustomer_IdOrderByOrderTimeDesc(Integer customerId, Pageable pageable);
+
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.appliedVoucher WHERE o.id = :id")
+    Optional<Order> findByIdWithVoucher(@Param("id") Integer id);
 
     // Updated to use status field only
     List<Order> findByStatus(String status);

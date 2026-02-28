@@ -14,6 +14,8 @@
         </div>
 
         <form th:object="${orderRequest}" th:action="@{/checkout}" method="post">
+            <input type="hidden" id="appliedVoucherCode" name="voucherCode" th:value="${appliedVoucherCode ?: ''}" />
+
             <!-- Shipping Address -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
@@ -66,31 +68,34 @@
                         <tr class="table-active">
                             <td colspan="2" class="text-end fw-bold">Subtotal</td>
                             <td id="subtotal" class="text-end fw-bold">
-                                <span th:text="${#numbers.formatCurrency(cartTotal)}">$0.00</span>
+                                <span th:text="${#numbers.formatCurrency(originalCartTotal)}">$0.00</span>
                             </td>
                         </tr>
 
                         <tr class="table-warning">
                             <td colspan="2" class="text-end fw-bold">Product Discounts</td>
                             <td id="product-discount" class="text-end fw-bold text-success">
-                                <span th:text="${#numbers.formatCurrency(totalProductDiscount)}">$0.00</span>
+                                <span th:text="'- ' + ${#numbers.formatCurrency(originalProductDiscount)}">$0.00</span>
                             </td>
                         </tr>
 
                         <tr class="table-info">
                             <td colspan="2" class="text-end fw-bold">Voucher Discount</td>
-                            <td id="voucher-discount" class="text-end fw-bold text-success">$0.00</td>
+                            <td id="voucher-discount" class="text-end fw-bold text-success"
+                                th:text="${#numbers.formatCurrency(originalVoucherDiscount)}">$0.00</td>
                         </tr>
 
                         <tr class="table-success">
                             <td colspan="2" class="text-end fw-bold fs-5">Total Savings</td>
-                            <td id="total-discount" class="text-end fw-bold fs-5 text-success">$0.00</td>
+                            <td id="total-discount" class="text-end fw-bold fs-5 text-success"
+                                th:with="totalSavings=${originalProductDiscount + originalVoucherDiscount}"
+                                th:text="${#numbers.formatCurrency(totalSavings)}">$0.00</td>
                         </tr>
 
                         <tr class="table-active">
                             <td colspan="2" class="text-end fw-bold">Shipping Fee</td>
                             <td id="shipping-fee" class="text-end fw-bold text-success"
-                                th:text="${#numbers.formatCurrency(shippingFee)}">
+                                th:text="${#numbers.formatCurrency(originalShippingFee)}">
                                 $0.00
                             </td>
                         </tr>
@@ -98,7 +103,7 @@
                         <tr class="table-light">
                             <td colspan="2" class="text-end fw-bold fs-5">Grand Total</td>
                             <td id="grand-total" class="text-end fw-bold fs-5 text-danger"
-                                th:text="${#numbers.formatCurrency(grandTotal)}">
+                                th:text="${#numbers.formatCurrency(originalCartTotal + originalShippingFee - originalVoucherDiscount)}">
                                 $0.00
                             </td>
                         </tr>
@@ -140,15 +145,17 @@
                         const voucherDiscountElem = document.getElementById('voucher-discount');
                         const totalDiscountElem = document.getElementById('total-discount');
                         const voucherMessageElem = document.getElementById('voucherMessage');
+                        const hiddenVoucherField = document.getElementById('appliedVoucherCode');
 
                         const originalCartTotal = /*[[${cartTotal}]]*/ 0;
                         const originalProductDiscount = /*[[${totalProductDiscount}]]*/ 0;
                         const originalShippingFee = /*[[${shippingFee}]]*/ 0;
+                        const originalVoucherDiscount = /*[[${appliedVoucherDiscount ?: 0}]]*/ 0;
 
-                        let currentCartTotal = originalCartTotal;
-                        let currentVoucherDiscount = 0;
-                        let currentShippingFee = originalShippingFee;
-                        let appliedVoucherCode = '';
+                        let jsCartTotal = originalCartTotal;
+                        let jsVoucherDiscount = originalVoucherDiscount;
+                        let jsShippingFee = originalShippingFee;
+                        let appliedVoucherCode = /*[[${appliedVoucherCode ?: ''}]]*/ '';
 
                         const baseUrl = /*[[@{/}]]*/ '';
                         const csrfToken = /*[[${_csrf?.token}]]*/ null;
@@ -158,22 +165,27 @@
                         updateTotals();
 
                         function updateTotals() {
-                            const totalDiscount = originalProductDiscount + currentVoucherDiscount;
-                            const grandTotal = currentCartTotal + currentShippingFee;
+                            const totalDiscount = originalProductDiscount + jsVoucherDiscount;
+                            const grandTotal = originalCartTotal + jsShippingFee - jsVoucherDiscount;
 
-                            if (subtotalElem) subtotalElem.textContent = formatCurrency(currentCartTotal);
+                            if (subtotalElem) subtotalElem.textContent = formatCurrency(originalCartTotal);
+
                             if (productDiscountElem) productDiscountElem.textContent = formatCurrency(originalProductDiscount);
-                            if (voucherDiscountElem) voucherDiscountElem.textContent = formatCurrency(currentVoucherDiscount);
+                            if (voucherDiscountElem) voucherDiscountElem.textContent = formatCurrency(jsVoucherDiscount);
                             if (totalDiscountElem) totalDiscountElem.textContent = formatCurrency(totalDiscount);
-                            if (shippingFeeElem) shippingFeeElem.textContent = formatCurrency(currentShippingFee);
+                            if (shippingFeeElem) shippingFeeElem.textContent = formatCurrency(jsShippingFee);
                             if (grandTotalElem) grandTotalElem.textContent = formatCurrency(grandTotal);
                         }
 
                         function resetToOriginalTotals() {
-                            currentCartTotal = originalCartTotal;
-                            currentVoucherDiscount = 0;
-                            currentShippingFee = originalShippingFee;
+                            jsCartTotal = originalCartTotal;
+                            jsVoucherDiscount = originalVoucherDiscount;
+                            jsShippingFee = originalShippingFee;
                             appliedVoucherCode = '';
+
+                            const hiddenVoucherField = document.getElementById('appliedVoucherCode');
+                            if (hiddenVoucherField) hiddenVoucherField.value = '';
+
                             if (voucherInput) voucherInput.value = '';
                             updateTotals();
                             if (voucherMessageElem) voucherMessageElem.innerHTML = '';
@@ -203,7 +215,7 @@
                                     })
                                     .then(data => {
                                         const fee = (typeof data.shippingFee === 'number') ? data.shippingFee : 0;
-                                        currentShippingFee = fee;
+                                        jsShippingFee = fee;
 
                                         if (appliedVoucherCode) {
                                             validateAndApplyVoucher(appliedVoucherCode, addressId);
@@ -272,21 +284,28 @@
                                 })
                                 .then(data => {
                                     if (data.valid) {
-                                        currentCartTotal = data.cartTotal;
-                                        currentVoucherDiscount = data.discountAmount;
-                                        currentShippingFee = data.shippingCost;
+                                        jsVoucherDiscount = data.discountAmount;
+                                        jsShippingFee = data.shippingCost;
                                         appliedVoucherCode = voucherCode;
+
+                                        const hiddenVoucherField = document.getElementById('appliedVoucherCode');
+                                        if (hiddenVoucherField) {
+                                            hiddenVoucherField.value = appliedVoucherCode;
+                                        }
+
                                         updateTotals();
                                         showVoucherMessage('Voucher applied successfully!', 'success');
                                     } else {
                                         showVoucherMessage(data.message || 'Invalid voucher code', 'danger');
                                         appliedVoucherCode = '';
+                                        if (hiddenVoucherField) hiddenVoucherField.value = '';
                                     }
                                 })
                                 .catch(error => {
                                     const message = error?.message || 'Failed to validate voucher. Please try again.';
                                     showVoucherMessage(message, 'danger');
                                     appliedVoucherCode = '';
+                                    if (hiddenVoucherField) hiddenVoucherField.value = '';
                                 });
                         }
 

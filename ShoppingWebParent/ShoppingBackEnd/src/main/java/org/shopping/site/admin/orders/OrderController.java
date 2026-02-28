@@ -72,7 +72,7 @@ public class OrderController extends BaseController {
                              Model model,
                              Authentication auth) {
         Integer userId = getCurrentUserId(auth);
-        Order order = orderRepo.findById(orderId)
+        Order order = orderRepo.findByIdWithVoucher(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         // Security check
@@ -98,22 +98,35 @@ public class OrderController extends BaseController {
             return "redirect:/orders";
         }
 
-        List<OrderTrack> tracks = orderTrackRepo.findByOrder_IdOrderByUpdatedTimeAsc(orderId);
-
-        BigDecimal totalProductDiscount = order.getOrderDetails().stream()
-                .map(detail -> {
-                    if (detail.getOriginalUnitPrice() != null) {
-                        return detail.getOriginalUnitPrice()
-                                .subtract(detail.getUnitPrice())
-                                .multiply(BigDecimal.valueOf(detail.getQuantity()));
-                    }
-                    return BigDecimal.ZERO;
-                })
+        // Calculate all breakdown values in Java (safe, testable, no template logic)
+        BigDecimal originalSubtotal = order.getOrderDetails().stream()
+                .map(d -> d.getOriginalUnitPrice() != null
+                        ? d.getOriginalUnitPrice().multiply(BigDecimal.valueOf(d.getQuantity()))
+                        : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal productDiscount = order.getOrderDetails().stream()
+                .map(d -> d.getOriginalUnitPrice() != null && d.getUnitPrice() != null
+                        ? d.getOriginalUnitPrice().subtract(d.getUnitPrice()).multiply(BigDecimal.valueOf(d.getQuantity()))
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal voucherDiscount = order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCost = order.getShippingCost() != null ? order.getShippingCost() : BigDecimal.ZERO;
+        BigDecimal grandTotal = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        boolean isFreeShipping = shippingCost.compareTo(BigDecimal.ZERO) == 0;
+
         model.addAttribute("order", order);
-        model.addAttribute("tracks", tracks);
-        model.addAttribute("totalProductDiscount", totalProductDiscount);
+        model.addAttribute("tracks", orderTrackRepo.findByOrder_IdOrderByUpdatedTimeAsc(orderId));
+
+        // Pass pre-calculated values to template
+        model.addAttribute("originalSubtotal", originalSubtotal);
+        model.addAttribute("productDiscount", productDiscount);
+        model.addAttribute("voucherDiscount", voucherDiscount);
+        model.addAttribute("shippingCost", shippingCost);
+        model.addAttribute("isFreeShipping", isFreeShipping);
+        model.addAttribute("grandTotal", grandTotal);
+
         return "orders/order_detail";
     }
 }

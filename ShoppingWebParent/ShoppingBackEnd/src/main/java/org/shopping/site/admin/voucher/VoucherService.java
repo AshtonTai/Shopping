@@ -52,7 +52,7 @@ public class VoucherService {
             case FIXED_AMOUNT:
                 return voucher.getValue().min(cartTotal); // Don't exceed cart total
             case FREE_SHIPPING:
-                return BigDecimal.ZERO; // Free shipping handled separately
+                return BigDecimal.ZERO;
             default:
                 return BigDecimal.ZERO;
         }
@@ -77,7 +77,6 @@ public class VoucherService {
 
         usageRepo.save(usage);
 
-        // Update usage count
         voucher.setUsageCount(voucher.getUsageCount() + 1);
         voucherRepo.save(voucher);
     }

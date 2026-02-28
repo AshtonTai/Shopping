@@ -4,13 +4,16 @@ import org.shopping.entity.Order;
 import org.shopping.site.admin.BaseController;
 import org.shopping.site.admin.orders.OrderService;
 import org.shopping.site.admin.orders.OrderRepository;
+import org.shopping.site.admin.orders.OrderTrackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -21,6 +24,8 @@ public class ShipperController extends BaseController {
 
     @Autowired private OrderRepository orderRepo;
     @Autowired private OrderService orderService;
+    @Autowired private OrderTrackRepository orderTrackRepo;
+
 
     @GetMapping
     public String dashboard(Model model) {
@@ -85,9 +90,37 @@ public class ShipperController extends BaseController {
     }
 
     @GetMapping("/order/{orderId}")
-    public String viewOrder(@PathVariable Integer orderId, Model model) {
+    public String viewOrderDetail(@PathVariable Integer orderId, Model model, Authentication auth) {
         Order order = orderService.findById(orderId);
+
+        // Calculate breakdown values
+        BigDecimal originalSubtotal = order.getOrderDetails().stream()
+                .map(d -> d.getOriginalUnitPrice() != null
+                        ? d.getOriginalUnitPrice().multiply(BigDecimal.valueOf(d.getQuantity()))
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal productDiscount = order.getOrderDetails().stream()
+                .map(d -> d.getOriginalUnitPrice() != null && d.getUnitPrice() != null
+                        ? d.getOriginalUnitPrice().subtract(d.getUnitPrice()).multiply(BigDecimal.valueOf(d.getQuantity()))
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal voucherDiscount = order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCost = order.getShippingCost() != null ? order.getShippingCost() : BigDecimal.ZERO;
+        BigDecimal grandTotal = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        boolean isFreeShipping = shippingCost.compareTo(BigDecimal.ZERO) == 0;
+
         model.addAttribute("order", order);
+        model.addAttribute("tracks", orderTrackRepo.findByOrder_IdOrderByUpdatedTimeAsc(orderId));
+
+        model.addAttribute("originalSubtotal", originalSubtotal);
+        model.addAttribute("productDiscount", productDiscount);
+        model.addAttribute("voucherDiscount", voucherDiscount);
+        model.addAttribute("shippingCost", shippingCost);
+        model.addAttribute("isFreeShipping", isFreeShipping);
+        model.addAttribute("grandTotal", grandTotal);
+
         return "shipper/order_detail";
     }
 }

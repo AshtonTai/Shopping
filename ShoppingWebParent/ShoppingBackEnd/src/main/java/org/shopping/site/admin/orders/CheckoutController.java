@@ -67,10 +67,7 @@ public class CheckoutController extends BaseController {
             return "redirect:/cart";
         }
 
-        int totalQuantity = cartItems.stream()
-                .mapToInt(CartItem::getQuantity)
-                .sum();
-
+        int totalQuantity = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
         List<Address> addresses = addressRepo.findByUser_Id(userId);
         List<Country> countries = countryRepo.findAll();
 
@@ -79,12 +76,10 @@ public class CheckoutController extends BaseController {
 
         for (CartItem item : cartItems) {
             if (item.getProduct() == null) continue;
-
             Product p = item.getProduct();
             double originalPrice = p.getPrice();
             double finalPrice = (p.getDiscountPercent() > 0)
-                    ? p.getDiscountPrice()
-                    : p.getPrice();
+                    ? p.getDiscountPrice() : p.getPrice();
 
             BigDecimal itemTotal = BigDecimal.valueOf(finalPrice).multiply(BigDecimal.valueOf(item.getQuantity()));
             cartTotal = cartTotal.add(itemTotal);
@@ -105,17 +100,30 @@ public class CheckoutController extends BaseController {
             }
         }
 
-        BigDecimal grandTotal = cartTotal.add(shippingFee);
+        BigDecimal appliedVoucherDiscount = BigDecimal.ZERO; // Default to 0
+        String appliedVoucherCode = ""; // Default to empty
+
+        BigDecimal grandTotal = cartTotal.add(shippingFee).subtract(appliedVoucherDiscount);
 
         model.addAttribute("cartItems", cartItems);
         model.addAttribute("addresses", addresses);
         model.addAttribute("countries", countries);
         model.addAttribute("orderRequest", new OrderRequest());
         model.addAttribute("totalQuantity", totalQuantity);
-        model.addAttribute("cartTotal", cartTotal);
-        model.addAttribute("totalProductDiscount", totalProductDiscount);
-        model.addAttribute("shippingFee", shippingFee);
-        model.addAttribute("grandTotal", grandTotal);
+
+        // Original values for display (never null)
+        model.addAttribute("originalCartTotal", cartTotal != null ? cartTotal : BigDecimal.ZERO);
+        model.addAttribute("originalProductDiscount", totalProductDiscount != null ? totalProductDiscount : BigDecimal.ZERO);
+        model.addAttribute("originalShippingFee", shippingFee != null ? shippingFee : BigDecimal.ZERO);
+        model.addAttribute("originalVoucherDiscount", appliedVoucherDiscount);
+        model.addAttribute("appliedVoucherCode", appliedVoucherCode);
+
+        // Also keep non-prefixed versions for backward compatibility
+        model.addAttribute("cartTotal", cartTotal != null ? cartTotal : BigDecimal.ZERO);
+        model.addAttribute("totalProductDiscount", totalProductDiscount != null ? totalProductDiscount : BigDecimal.ZERO);
+        model.addAttribute("shippingFee", shippingFee != null ? shippingFee : BigDecimal.ZERO);
+        model.addAttribute("grandTotal", grandTotal != null ? grandTotal : BigDecimal.ZERO);
+
         if (!addresses.isEmpty()) {
             model.addAttribute("defaultAddressId", addresses.get(0).getId());
         }
@@ -129,6 +137,7 @@ public class CheckoutController extends BaseController {
                                @RequestParam(required = false) String voucherCode,
                                Authentication auth,
                                RedirectAttributes redirectAttributes) {
+
         Integer userId = getCurrentUserId(auth);
         if (userId == null || !userService.isCustomer(userId)) {
             return "redirect:/";
